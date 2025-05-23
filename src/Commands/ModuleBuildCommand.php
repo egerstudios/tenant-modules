@@ -60,7 +60,9 @@ class ModuleBuildCommand extends Command
         $outputPath = public_path(config('modules.assets.public')) . "/{$moduleName}/css";
         $outputFile = "{$outputPath}/module.css";
 
-        File::makeDirectory($outputPath, 0755, true);
+        if (!file_exists($outputPath)) {
+            File::makeDirectory($outputPath, 0755, true, true);
+        }
 
         $content = '';
         foreach ($styles as $style) {
@@ -79,7 +81,9 @@ class ModuleBuildCommand extends Command
         $outputPath = public_path(config('modules.assets.public')) . "/{$moduleName}/js";
         $outputFile = "{$outputPath}/module.js";
 
-        File::makeDirectory($outputPath, 0755, true);
+        if (!file_exists($outputPath)) {
+            File::makeDirectory($outputPath, 0755, true, true);
+        }
 
         $content = '';
         foreach ($scripts as $script) {

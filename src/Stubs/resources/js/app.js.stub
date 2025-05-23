@@ -1,0 +1,6 @@
+// Default JS for the {{ module }} module.
+// Place your module-specific scripts here.
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Example script
+}); 

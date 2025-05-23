@@ -1,0 +1,16 @@
+<?php
+
+namespace Modules\{{ module }}\Resources\Components;
+
+use Livewire\Component;
+
+/**
+ * Example Livewire/Volt component for the {{ module }} module.
+ */
+class ExampleComponent extends Component
+{
+    public function render()
+    {
+        return view('modules.{{ module }}.resources.components.example-component');
+    }
+} 

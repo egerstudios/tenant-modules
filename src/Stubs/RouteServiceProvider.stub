@@ -1,0 +1,26 @@
+<?php
+
+namespace Modules\\{{ $name }}\\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    protected string $moduleNamespace = 'Modules\\{{ $name }}\\Http\\Controllers';
+    protected string $moduleName = '{{ $name }}';
+
+    public function boot(): void
+    {
+        $this->routes(function () {
+            Route::middleware('web')
+                ->namespace($this->moduleNamespace)
+                ->group(module_path($this->moduleName, 'Routes/web.php'));
+
+            Route::prefix('api')
+                ->middleware('api')
+                ->namespace($this->moduleNamespace)
+                ->group(module_path($this->moduleName, 'Routes/api.php'));
+        });
+    }
+} 

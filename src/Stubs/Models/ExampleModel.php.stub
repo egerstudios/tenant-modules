@@ -1,0 +1,15 @@
+<?php
+
+namespace Modules\{{ module }}\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Example model for the {{ module }} module.
+ *
+ * Replace this with your actual module models.
+ */
+class ExampleModel extends Model
+{
+    // Define your model properties and relationships here
+} 

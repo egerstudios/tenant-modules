@@ -10,7 +10,7 @@ return [
     | to 'app/Modules', but you can change it to any path you prefer.
     |
     */
-    'path' => env('MODULES_PATH', 'app/Modules'),
+    'path' => 'modules',
 
     /*
     |--------------------------------------------------------------------------

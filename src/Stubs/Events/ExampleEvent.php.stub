@@ -1,0 +1,18 @@
+<?php
+
+namespace Modules\{{ module }}\Events;
+
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Example event for the {{ module }} module.
+ *
+ * Replace this with your actual module events.
+ */
+class ExampleEvent
+{
+    use Dispatchable, SerializesModels;
+
+    // Add your event properties and methods here
+} 

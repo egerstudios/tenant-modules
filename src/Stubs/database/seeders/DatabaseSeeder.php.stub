@@ -1,15 +1,22 @@
 <?php
 
-namespace {{ namespace }}\{{ module }}\Database\Seeders;
+namespace Modules\{{ module }}\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * Seeder for the {{ module }} module.
+ *
+ * This class seeds the database tables for the module.
+ */
 class {{ module }}DatabaseSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * @return void
      */
     public function run(): void
     {

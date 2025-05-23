@@ -1,0 +1,22 @@
+{{--
+    Welcome view for the {{ module }} module.
+    This is the default view generated for new modules.
+--}}
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">{{ config('{{ module_snake }}.name') }}</div>
+
+                <div class="card-body">
+                    <h1>Welcome to {{ config('{{ module_snake }}.name') }}</h1>
+                    <p>{{ config('{{ module_snake }}.description') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection 

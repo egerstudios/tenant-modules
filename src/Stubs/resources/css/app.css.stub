@@ -1,0 +1,9 @@
+/*
+ * Default CSS for the {{ module }} module.
+ *
+ * Place your module-specific styles here.
+ */
+
+body {
+    /* Example style */
+} 

@@ -1,0 +1,13 @@
+<?php
+
+namespace Modules\{{ module }}\Services;
+
+/**
+ * Example service for the {{ module }} module.
+ *
+ * Replace this with your actual module services.
+ */
+class ExampleService
+{
+    // Add your service methods here
+} 
