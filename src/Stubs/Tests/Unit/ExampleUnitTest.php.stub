@@ -1,0 +1,19 @@
+<?php
+
+namespace Modules\{{ module }}\Tests\Unit;
+
+use Tests\TestCase;
+use Modules\{{ module }}\Services\ExampleService;
+
+class ExampleUnitTest extends TestCase
+{
+    /** @test */
+    public function it_can_perform_service_operation()
+    {
+        $service = new ExampleService();
+        
+        $result = $service->exampleMethod();
+        
+        $this->assertTrue($result);
+    }
+} 

@@ -4,29 +4,46 @@ namespace Egerstudios\TenantModules\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\DB;
-use Stancl\Tenancy\Contracts\Tenant;
-use Stancl\Tenancy\Tenancy;
+use Egerstudios\TenantModules\Models\Module;
 
 class ModuleDeleteCommand extends Command
 {
-    protected $signature = 'module:delete {module : The name of the module to delete}';
-    protected $description = 'Deactivate a module for all tenants and delete its files';
+    protected $signature = 'module:delete {name} {--force}';
+    protected $description = 'Delete a module and its database record';
 
     public function handle()
     {
-        $moduleName = $this->argument('module');
-        $modulesPath = base_path(config('modules.path'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $name = $this->argument('name');
+        $force = $this->option('force');
+        $modulePath = base_path(config('modules.path')) . '/' . $name;
 
-        if (!File::exists($modulePath)) {
-            $this->warn("Module {$moduleName} does not exist.");
+        // Find the module in database
+        $module = Module::where('name', $name)->first();
+        if (!$module) {
+            $this->error("Module {$name} not found in database!");
             return 1;
         }
 
-        
-        File::deleteDirectory($modulePath);
-        $this->info("Module {$moduleName} deleted from disk.");
+        // Check if module is in use by any tenants
+        if ($module->tenants()->exists()) {
+            if (!$force) {
+                $this->error("Module {$name} is in use by tenants. Use --force to delete anyway.");
+                return 1;
+            }
+            $this->warn("Module {$name} is in use by tenants. Proceeding with deletion...");
+        }
+
+        // Delete module files
+        if (File::exists($modulePath)) {
+            File::deleteDirectory($modulePath);
+            $this->info("Module files deleted successfully.");
+        }
+
+        // Delete module record and related records
+        $module->tenants()->detach(); // Remove all tenant associations
+        $module->delete(); // Delete the module record
+
+        $this->info("Module {$name} has been deleted successfully!");
         return 0;
     }
 } 

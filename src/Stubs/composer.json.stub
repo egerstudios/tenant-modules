@@ -1,0 +1,17 @@
+{
+    "name": "modules/{{ nameLower }}",
+    "description": "{{ description }}",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Modules\\{{ module }}\\": "app/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\{{ module }}\\Providers\\{{ module }}ServiceProvider"
+            ]
+        }
+    }
+} 

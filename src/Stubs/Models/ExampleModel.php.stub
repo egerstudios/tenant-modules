@@ -7,9 +7,26 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Example model for the {{ module }} module.
  *
+ * This model demonstrates the standard Laravel model structure within a module.
  * Replace this with your actual module models.
  */
 class ExampleModel extends Model
 {
-    // Define your model properties and relationships here
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        // Add your fillable attributes here
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        // Add your attribute casts here
+    ];
 } 

@@ -1,0 +1,31 @@
+<?php
+
+namespace Modules\{{ module }}\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class ExampleRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'status' => ['required', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'The name field is required.',
+            'name.max' => 'The name may not be greater than 255 characters.',
+            'status.required' => 'The status field is required.',
+        ];
+    }
+} 

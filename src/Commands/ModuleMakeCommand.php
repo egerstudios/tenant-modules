@@ -5,11 +5,13 @@ namespace Egerstudios\TenantModules\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Egerstudios\TenantModules\Models\Module;
 
 class ModuleMakeCommand extends Command
 {
     protected $signature = 'module:make {name : The name of the module}';
     protected $description = 'Create a new module';
+    protected $layout = '';
 
     public function handle()
     {
@@ -22,11 +24,23 @@ class ModuleMakeCommand extends Command
             return 1;
         }
 
+        // Ask for the layout to use for the example blade view
+        $this->layout = $this->choice('Which layout should the example blade view use?', ['tenant', 'admin', 'app'], 'tenant');
+
         // Create module directory structure
         $this->createDirectoryStructure($modulePath);
 
         // Create module files from stubs
         $this->createModuleFiles($name, $modulePath, $stubsPath);
+
+        // Create module record in database
+        Module::create([
+            'name' => $name,
+            'description' => "Module {$name}",
+            'version' => '1.0.0',
+            'is_core' => false,
+            'settings_schema' => null
+        ]);
 
         $this->info("Module {$name} created successfully!");
         return 0;
@@ -35,29 +49,38 @@ class ModuleMakeCommand extends Command
     protected function createDirectoryStructure(string $modulePath): void
     {
         $directories = [
-            'app/Http/Controllers',
-            'app/Models',
-            'app/Services',
-            'app/Events',
-            'app/Listeners',
-            'app/Providers',
-            'app/Http/Middleware',
-            'app/Http/Requests',
-            'app/Http/Resources',
-            'app/Exceptions',
+            'Http/Controllers',
+            'Models',
+            'Services',
+            'Events',
+            'Listeners',
+            'Providers',
+            'Http/Middleware',
+            'Http/Requests',
+            'Http/Resources',
+            'Exceptions',
+            'Console/Commands',
+            'Database/Seeders',
+            'Tests/Feature',
+            'Tests/Unit',
             'config',
             'database/migrations',
             'database/seeders',
             'resources/views',
             'resources/css',
             'resources/js',
+            'resources/components',
             'routes',
             'tests/Feature',
             'tests/Unit',
+            'lang',
         ];
 
         foreach ($directories as $directory) {
-            File::makeDirectory($modulePath . '/' . $directory, 0755, true);
+            $dirPath = $modulePath . '/' . $directory;
+            if (!File::exists($dirPath)) {
+                File::makeDirectory($dirPath, 0755, true);
+            }
         }
     }
 
@@ -65,8 +88,14 @@ class ModuleMakeCommand extends Command
     {
         $replacements = [
             '{{ module }}' => $name,
-            '{{ module_snake }}' => Str::snake($name),
+            '{{ module_snake }}' => \Illuminate\Support\Str::snake($name),
             '{{ description }}' => "The {$name} module",
+            '{{ nameLower }}' => strtolower($name),
+            '{{ $name }}' => $name,
+            '{{ $nameLower }}' => strtolower($name),
+            '{{ $module }}' => $name,
+            '{{ $module_snake }}' => \Illuminate\Support\Str::snake($name),
+            '{{ layout }}' => $this->layout,
         ];
 
         // Create module.php
@@ -92,8 +121,8 @@ class ModuleMakeCommand extends Command
 
         // Create database seeder with correct namespace
         $this->createFileFromStub(
-            "$stubsPath/database/seeders/DatabaseSeeder.php.stub",
-            "$modulePath/database/seeders/{$name}DatabaseSeeder.php",
+            "$stubsPath/Database/Seeders/DatabaseSeeder.php.stub",
+            "$modulePath/Database/Seeders/{$name}DatabaseSeeder.php",
             $replacements
         );
 
@@ -101,6 +130,12 @@ class ModuleMakeCommand extends Command
         $this->createFileFromStub(
             "$stubsPath/resources/views/welcome.blade.php.stub",
             "$modulePath/resources/views/welcome.blade.php",
+            $replacements
+        );
+
+        $this->createFileFromStub(
+            "$stubsPath/resources/views/moduleinfo.blade.php.stub",
+            "$modulePath/resources/views/moduleinfo.blade.php",
             $replacements
         );
 
@@ -120,46 +155,107 @@ class ModuleMakeCommand extends Command
 
         // Create example model
         $this->createFileFromStub(
-            "$stubsPath/app/Models/ExampleModel.php.stub",
-            "$modulePath/app/Models/ExampleModel.php",
+            "$stubsPath/Models/ExampleModel.php.stub",
+            "$modulePath/Models/ExampleModel.php",
             $replacements
         );
 
         // Create example service
         $this->createFileFromStub(
-            "$stubsPath/app/Services/ExampleService.php.stub",
-            "$modulePath/app/Services/ExampleService.php",
+            "$stubsPath/Services/ExampleService.php.stub",
+            "$modulePath/Services/ExampleService.php",
             $replacements
         );
 
         // Create example event
         $this->createFileFromStub(
-            "$stubsPath/app/Events/ExampleEvent.php.stub",
-            "$modulePath/app/Events/ExampleEvent.php",
+            "$stubsPath/Events/ExampleEvent.php.stub",
+            "$modulePath/Events/ExampleEvent.php",
             $replacements
         );
 
         // Create example controller
         $this->createFileFromStub(
-            "$stubsPath/app/Http/Controllers/ExampleController.php.stub",
-            "$modulePath/app/Http/Controllers/ExampleController.php",
+            "$stubsPath/Http/Controllers/ExampleController.php.stub",
+            "$modulePath/Http/Controllers/ExampleController.php",
             $replacements
         );
 
         // Create service provider
         $this->createFileFromStub(
-            $stubsPath . '/app/Providers/ModuleServiceProvider.php.stub',
-            $modulePath . '/app/Providers/ModuleServiceProvider.php',
+            "$stubsPath/Providers/ModuleServiceProvider.php.stub",
+            "$modulePath/Providers/{$name}ServiceProvider.php",
+            $replacements
+        );
+
+        // Create route service provider
+        $this->createFileFromStub(
+            "$stubsPath/Providers/RouteServiceProvider.php.stub",
+            "$modulePath/Providers/RouteServiceProvider.php",
+            $replacements
+        );
+
+        // Create routes
+        $this->createFileFromStub(
+            "$stubsPath/routes/tenant.php.stub",
+            "$modulePath/routes/tenant.php",
+            $replacements
+        );
+
+        $this->createFileFromStub(
+            "$stubsPath/routes/api.php.stub",
+            "$modulePath/routes/api.php",
             $replacements
         );
 
         // Create example Livewire/Volt colocated component
         $this->createExampleLivewire($name, $modulePath);
 
-        // Create module.json
+        // Create tests
         $this->createFileFromStub(
-            $stubsPath . '/module.json.stub',
-            $modulePath . '/module.json',
+            "$stubsPath/Tests/Feature/ExampleTest.php.stub",
+            "$modulePath/Tests/Feature/ExampleTest.php",
+            $replacements
+        );
+
+        $this->createFileFromStub(
+            "$stubsPath/Tests/Unit/ExampleUnitTest.php.stub",
+            "$modulePath/Tests/Unit/ExampleUnitTest.php",
+            $replacements
+        );
+
+        // Create language files
+        $this->createFileFromStub(
+            "$stubsPath/lang/en.json.stub",
+            "$modulePath/lang/en.json",
+            $replacements
+        );
+
+        // Create console command
+        $this->createFileFromStub(
+            "$stubsPath/Console/Commands/ExampleCommand.php.stub",
+            "$modulePath/Console/Commands/ExampleCommand.php",
+            $replacements
+        );
+
+        // Create middleware
+        $this->createFileFromStub(
+            "$stubsPath/Http/Middleware/ExampleMiddleware.php.stub",
+            "$modulePath/Http/Middleware/ExampleMiddleware.php",
+            $replacements
+        );
+
+        // Create form request
+        $this->createFileFromStub(
+            "$stubsPath/Http/Requests/ExampleRequest.php.stub",
+            "$modulePath/Http/Requests/ExampleRequest.php",
+            $replacements
+        );
+
+        // Create composer.json
+        $this->createFileFromStub(
+            "$stubsPath/composer.json.stub",
+            "$modulePath/composer.json",
             $replacements
         );
     }

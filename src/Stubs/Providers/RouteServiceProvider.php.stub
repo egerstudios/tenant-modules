@@ -1,26 +1,26 @@
 <?php
 
-namespace Modules\{{ $name }}\Providers;
+namespace Modules\{{ module }}\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 
 class RouteServiceProvider extends ServiceProvider
 {
-    protected string $moduleNamespace = 'Modules\{{ $name }}\\Http\\Controllers';
-    protected string $moduleName = '{{ $name }}';
+    protected string $moduleNamespace = 'Modules\\{{ module }}\\Http\\Controllers';
+    protected string $moduleName = '{{ module }}';
 
     public function boot(): void
     {
         $this->routes(function () {
-            Route::middleware(['web', 'auth', 'tenant'])
+            Route::middleware('web')
                 ->namespace($this->moduleNamespace)
-                ->group(module_path($this->moduleName, 'Routes/tenant.php'));
+                ->group(module_path($this->moduleName, 'routes/tenant.php'));
 
             Route::prefix('api')
                 ->middleware('api')
                 ->namespace($this->moduleNamespace)
-                ->group(module_path($this->moduleName, 'Routes/api.php'));
+                ->group(module_path($this->moduleName, 'routes/api.php'));
         });
     }
 } 

@@ -15,4 +15,13 @@ Route::group(['middleware' => ['web']], function () {
     Route::get('/', function () {
         return view('{{ $nameLower }}::welcome');
     });
+
+    Route::get('/info', function () {
+        return view('{{ $nameLower }}::moduleinfo', [
+            'name' => '{{ $name }}',
+            'description' => '{{ $description }}',
+            'version' => '1.0.0',
+            'nameLower' => '{{ $nameLower }}'
+        ]);
+    });
 }); 

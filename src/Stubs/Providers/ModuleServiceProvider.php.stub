@@ -1,15 +1,15 @@
 <?php
 
-namespace Modules\{{ $name }}\Providers;
+namespace Modules\{{ module }}\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 
-class {{ $name }}ServiceProvider extends ServiceProvider
+class {{ module }}ServiceProvider extends ServiceProvider
 {
-    protected string $moduleName = '{{ $name }}';
-    protected string $moduleNameLower = '{{ strtolower($name) }}';
+    protected string $moduleName = '{{ module }}';
+    protected string $moduleNameLower = '{{ nameLower }}';
 
     public function register(): void
     {
@@ -36,17 +36,20 @@ class {{ $name }}ServiceProvider extends ServiceProvider
         // Register module translations
         $this->loadTranslationsFrom(module_path($this->moduleName, 'lang'), $this->moduleNameLower);
 
-        // Auto-discover Livewire components
+        // Auto-register Livewire components in this module
         if (class_exists(\Livewire\Livewire::class)) {
-            \Livewire\Livewire::discoverComponents(
-                base_path("modules/{{ $name }}/app/Livewire"),
-                'Modules\\{{ $name }}\\Livewire'
-            );
+            $livewirePath = module_path($this->moduleName, 'Livewire');
+            if (is_dir($livewirePath)) {
+                foreach (glob($livewirePath . '/*.php') as $file) {
+                    $class = 'Modules\\' . $this->moduleName . '\\Livewire\\' . basename($file, '.php');
+                    \Livewire\Livewire::component(strtolower($this->moduleName) . '-' . strtolower(basename($file, '.php')), $class);
+                }
+            }
         }
 
         // Auto-discover Volt components
         if (function_exists('Volt\\discover')) {
-            \Volt\discover(base_path("modules/{{ $name }}/resources/components"), '{{ strtolower($name) }}');
+            \Volt\discover(base_path("modules/{{ module }}/resources/components"), '{{ nameLower }}');
         }
     }
 
@@ -54,7 +57,7 @@ class {{ $name }}ServiceProvider extends ServiceProvider
     {
         Route::group([
             'prefix' => $this->moduleNameLower,
-            'middleware' => ['web','tenant','auth'],
+            'middleware' => ['web','auth','tenant'],
             'namespace' => "Modules\\{$this->moduleName}\\Http\\Controllers",
         ], function () {
             $this->loadRoutesFrom(module_path($this->moduleName, 'routes/tenant.php'));

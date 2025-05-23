@@ -5,9 +5,26 @@ namespace Modules\{{ module }}\Services;
 /**
  * Example service for the {{ module }} module.
  *
- * Replace this with your actual module services.
+ * This service demonstrates the standard service structure within a module.
+ * Services are used to encapsulate business logic and can be injected into controllers.
  */
 class ExampleService
 {
-    // Add your service methods here
+    /**
+     * Create a new service instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Example method to demonstrate service usage.
+     *
+     * @return mixed
+     */
+    public function exampleMethod()
+    {
+        // Add your service logic here
+    }
 } 

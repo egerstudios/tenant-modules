@@ -1,0 +1,33 @@
+<?php
+
+namespace Modules\{{ module }}\Tests\Feature;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+class ExampleTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /** @test */
+    public function it_can_access_the_module()
+    {
+        $response = $this->get(route('{{ module_snake }}.index'));
+
+        $response->assertStatus(200);
+    }
+
+    /** @test */
+    public function it_can_create_a_resource()
+    {
+        $data = [
+            'name' => 'Test Resource',
+            'description' => 'This is a test resource',
+        ];
+
+        $response = $this->post(route('{{ module_snake }}.store'), $data);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseHas('{{ module_snake }}', $data);
+    }
+} 

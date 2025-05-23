@@ -8,11 +8,18 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Example event for the {{ module }} module.
  *
- * Replace this with your actual module events.
+ * This event demonstrates the standard event structure within a module.
+ * Events are used to broadcast state changes and trigger listeners.
  */
 class ExampleEvent
 {
     use Dispatchable, SerializesModels;
 
-    // Add your event properties and methods here
+    /**
+     * Create a new event instance.
+     */
+    public function __construct()
+    {
+        //
+    }
 } 

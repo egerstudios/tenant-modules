@@ -1,0 +1,20 @@
+<?php
+
+namespace Modules\{{ module }}\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ExampleCommand extends Command
+{
+    protected $signature = '{{ module_snake }}:example {name? : The name of the example}';
+    protected $description = 'Example command for the {{ module }} module';
+
+    public function handle()
+    {
+        $name = $this->argument('name') ?? 'World';
+        
+        $this->info("Hello {$name} from the {{ module }} module!");
+        
+        return Command::SUCCESS;
+    }
+} 

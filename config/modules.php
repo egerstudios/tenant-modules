@@ -3,26 +3,53 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Module Path
+    | Modules Path
     |--------------------------------------------------------------------------
     |
-    | This is the path where your modules will be located. By default, it's set
-    | to 'app/Modules', but you can change it to any path you prefer.
+    | This is the path where your modules will be located.
     |
     */
     'path' => 'modules',
 
     /*
     |--------------------------------------------------------------------------
-    | Module Namespace
+    | Modules Namespace
     |--------------------------------------------------------------------------
     |
-    | This is the namespace that will be used for your modules. By default,
-    | it's set to 'App\Modules', but you can change it to match your
-    | application's namespace structure.
+    | This is the namespace that will be used for your modules.
     |
     */
-    'namespace' => env('MODULES_NAMESPACE', 'App\\Modules'),
+    'namespace' => 'Modules',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Service Provider
+    |--------------------------------------------------------------------------
+    |
+    | This is the service provider class that will be used for your modules.
+    |
+    */
+    'provider' => 'app\\Providers\\ModuleServiceProvider',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Service Provider Path
+    |--------------------------------------------------------------------------
+    |
+    | This is the path where your module service providers will be located.
+    |
+    */
+    'provider_path' => 'app/Providers',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Service Provider Namespace
+    |--------------------------------------------------------------------------
+    |
+    | This is the namespace that will be used for your module service providers.
+    |
+    */
+    'provider_namespace' => 'app\\Providers',
 
     /*
     |--------------------------------------------------------------------------

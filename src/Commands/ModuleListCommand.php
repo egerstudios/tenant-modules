@@ -3,67 +3,52 @@
 namespace Egerstudios\TenantModules\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use App\Models\Tenant;
+use Egerstudios\TenantModules\Models\Module;
 
 class ModuleListCommand extends Command
 {
-    protected $signature = 'module:list';
-    protected $description = 'List all available modules';
+    protected $signature = 'module:list {--domain=}';
+    protected $description = 'List all modules and their status for a tenant';
 
     public function handle()
     {
-        $modulesPath = base_path(config('modules.path'));
-        $modules = [];
+        $domain = $this->option('domain');
 
-        if (File::isDirectory($modulesPath)) {
-            foreach (File::directories($modulesPath) as $modulePath) {
-                $moduleName = basename($modulePath);
-                $configPath = "{$modulePath}/config/module.php";
-
-                if (File::exists($configPath)) {
-                    $config = require $configPath;
-                    $modules[] = [
-                        'name' => $moduleName,
-                        'description' => $config['description'] ?? 'No description',
-                        'version' => $config['version'] ?? '1.0.0',
-                        'status' => $this->getModuleStatus($moduleName),
-                    ];
-                }
-            }
+        if (!$domain) {
+            $this->error('Domain is required. Use --domain option.');
+            return 1;
         }
 
-        if (empty($modules)) {
-            $this->info('No modules found.');
-            return 0;
+        // Find the tenant
+        $tenant = Tenant::whereHas('domains', function ($query) use ($domain) {
+            $query->where('domain', $domain);
+        })->first();
+        if (!$tenant) {
+            $this->error("Tenant with domain {$domain} not found.");
+            return 1;
         }
 
+        // Get all modules with their status for this tenant
+        $modules = Module::with(['tenants' => function ($query) use ($tenant) {
+            $query->where('tenants.id', $tenant->id);
+        }])->get();
+
+        $this->info("\nModules for tenant {$domain}:");
         $this->table(
-            ['Name', 'Description', 'Version', 'Status'],
-            collect($modules)->map(function ($module) {
+            ['Module', 'Version', 'Status', 'Activated At', 'Last Billed'],
+            $modules->map(function ($module) {
+                $tenantModule = $module->tenants->first();
                 return [
-                    $module['name'],
-                    $module['description'],
-                    $module['version'],
-                    $module['status'],
+                    $module->name,
+                    $module->version,
+                    $tenantModule && $tenantModule->pivot->is_active ? 'Active' : 'Inactive',
+                    $tenantModule ? $tenantModule->pivot->activated_at?->format('Y-m-d H:i:s') : 'N/A',
+                    $tenantModule ? $tenantModule->pivot->last_billed_at?->format('Y-m-d H:i:s') : 'N/A',
                 ];
             })
         );
 
         return 0;
-    }
-
-    protected function getModuleStatus(string $moduleName): string
-    {
-        $activeTenants = \DB::table('tenant_modules')
-            ->where('module_name', $moduleName)
-            ->where('is_active', true)
-            ->count();
-
-        if ($activeTenants === 0) {
-            return '<fg=red>Inactive</>';
-        }
-
-        return "<fg=green>Active ({$activeTenants} tenants)</>";
     }
 } 
