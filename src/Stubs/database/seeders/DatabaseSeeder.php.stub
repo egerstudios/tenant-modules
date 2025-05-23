@@ -1,0 +1,55 @@
+<?php
+
+namespace {{ namespace }}\{{ module }}\Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\Yaml\Yaml;
+
+class {{ module }}DatabaseSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $permissionsPath = __DIR__ . '/../../config/permissions.yaml';
+        if (!file_exists($permissionsPath)) {
+            return;
+        }
+
+        $config = Yaml::parseFile($permissionsPath);
+        $permissions = $config['permissions'] ?? [];
+        $roles = $config['roles'] ?? [];
+
+        // Create permissions
+        foreach ($permissions as $name => $data) {
+            DB::table('permissions')->updateOrInsert(
+                ['name' => $name],
+                [
+                    'name' => $name,
+                    'display_name' => $data['name'],
+                    'description' => $data['description'] ?? null,
+                ]
+            );
+        }
+
+        // Create roles and assign permissions
+        foreach ($roles as $roleName => $roleData) {
+            $roleId = DB::table('roles')->insertGetId([
+                'name' => $roleName,
+                'display_name' => $roleData['name'],
+                'description' => $roleData['description'] ?? null,
+            ]);
+
+            foreach ($roleData['permissions'] as $permission) {
+                DB::table('role_has_permissions')->insert([
+                    'role_id' => $roleId,
+                    'permission_id' => DB::table('permissions')
+                        ->where('name', $permission)
+                        ->value('id'),
+                ]);
+            }
+        }
+    }
+} 

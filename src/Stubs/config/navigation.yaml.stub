@@ -1,0 +1,15 @@
+items:
+  - label: {{ module }}
+    icon: module
+    route: {{ module_snake }}.index
+    permission: {{ module_snake }}.view
+    children:
+      - label: List
+        route: {{ module_snake }}.index
+        permission: {{ module_snake }}.view
+      - label: Create
+        route: {{ module_snake }}.create
+        permission: {{ module_snake }}.create
+      - label: Settings
+        route: {{ module_snake }}.settings
+        permission: {{ module_snake }}.manage 

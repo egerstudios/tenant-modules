@@ -1,0 +1,34 @@
+permissions:
+  {{ module_snake }}.view:
+    name: View {{ module }}
+    description: Can view {{ module_snake }} list and details
+  {{ module_snake }}.create:
+    name: Create {{ module }}
+    description: Can create new {{ module_snake }} entries
+  {{ module_snake }}.edit:
+    name: Edit {{ module }}
+    description: Can edit existing {{ module_snake }} entries
+  {{ module_snake }}.delete:
+    name: Delete {{ module }}
+    description: Can delete {{ module_snake }} entries
+  {{ module_snake }}.manage:
+    name: Manage {{ module }}
+    description: Can manage {{ module_snake }} settings and configuration
+
+roles:
+  {{ module_snake }}-manager:
+    name: {{ module }} Manager
+    description: Full access to {{ module_snake }} management
+    permissions:
+      - {{ module_snake }}.view
+      - {{ module_snake }}.create
+      - {{ module_snake }}.edit
+      - {{ module_snake }}.delete
+      - {{ module_snake }}.manage
+  {{ module_snake }}-user:
+    name: {{ module }} User
+    description: Basic access to {{ module_snake }} features
+    permissions:
+      - {{ module_snake }}.view
+      - {{ module_snake }}.create
+      - {{ module_snake }}.edit 
