@@ -3,27 +3,26 @@
 namespace Egerstudios\TenantModules\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ModuleLog extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'tenant_id',
         'module_name',
         'action',
-        'occurred_at',
+        'occurred_at'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
         'occurred_at' => 'datetime',
     ];
+
+    /**
+     * Get the tenant that owns the log.
+     */
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Tenant::class);
+    }
 } 

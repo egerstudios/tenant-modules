@@ -119,6 +119,9 @@ class ModuleMakeCommand extends Command
             $replacements
         );
 
+        // Create role and permission migrations
+        $this->createRoleAndPermissionMigrations($name, $modulePath, $replacements);
+
         // Create database seeder with correct namespace
         $this->createFileFromStub(
             "$stubsPath/Database/Seeders/DatabaseSeeder.php.stub",
@@ -183,15 +186,8 @@ class ModuleMakeCommand extends Command
 
         // Create service provider
         $this->createFileFromStub(
-            "$stubsPath/Providers/ModuleServiceProvider.php.stub",
+            "$stubsPath/ServiceProvider.stub",
             "$modulePath/Providers/{$name}ServiceProvider.php",
-            $replacements
-        );
-
-        // Create route service provider
-        $this->createFileFromStub(
-            "$stubsPath/Providers/RouteServiceProvider.php.stub",
-            "$modulePath/Providers/RouteServiceProvider.php",
             $replacements
         );
 
@@ -303,32 +299,9 @@ class ModuleMakeCommand extends Command
                 Str::snake($name) . '.edit' => 'Edit ' . $name,
                 Str::snake($name) . '.delete' => 'Delete ' . $name,
             ],
-            'roles' => [
-                Str::snake($name) . '-manager' => [
-                    'name' => Str::title($name) . ' Manager',
-                    'permissions' => [
-                        Str::snake($name) . '.view',
-                        Str::snake($name) . '.create',
-                        Str::snake($name) . '.edit',
-                        Str::snake($name) . '.delete',
-                    ],
-                ],
-                Str::snake($name) . '-viewer' => [
-                    'name' => Str::title($name) . ' Viewer',
-                    'permissions' => [
-                        Str::snake($name) . '.view',
-                    ],
-                ],
-            ],
-            'migrations' => [
-                'database/migrations/2024_03_21_000000_create_' . Str::snake($name) . '_table.php',
-            ],
-            'seeders' => [
-                'database/seeders/' . $name . 'DatabaseSeeder.php',
-            ],
         ];
 
-        File::put("{$modulePath}/config/module.php", '<?php' . PHP_EOL . PHP_EOL . 'return ' . var_export($config, true) . ';' . PHP_EOL);
+        File::put($modulePath . '/config/module.php', '<?php return ' . var_export($config, true) . ';');
     }
 
     protected function createExampleLivewire($name, $modulePath)
@@ -348,5 +321,25 @@ class ModuleMakeCommand extends Command
         $bladeContent = str_replace(['{{ module }}'], [$name], $bladeStub);
         \Illuminate\Support\Facades\File::put($componentClassPath, $classContent);
         \Illuminate\Support\Facades\File::put($componentBladePath, $bladeContent);
+    }
+
+    protected function createRoleAndPermissionMigrations(string $name, string $modulePath, array $replacements): void
+    {
+        $migrationPath = $modulePath . '/database/migrations';
+        $timestamp = date('Y_m_d_His');
+
+        // Create migration for module permissions
+        $this->createFileFromStub(
+            __DIR__ . '/../Stubs/database/migrations/create_module_permissions.php.stub',
+            "{$migrationPath}/{$timestamp}_create_{$replacements['{{ module_snake }}']}_permissions.php",
+            $replacements
+        );
+
+        // Create migration for module roles
+        $this->createFileFromStub(
+            __DIR__ . '/../Stubs/database/migrations/create_module_roles.php.stub',
+            "{$migrationPath}/{$timestamp}_create_{$replacements['{{ module_snake }}']}_roles.php",
+            $replacements
+        );
     }
 } 

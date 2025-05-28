@@ -1,0 +1,47 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Create module permissions
+        $permissions = [
+            '{{ module_snake }}.view' => 'View {{ module }}',
+            '{{ module_snake }}.create' => 'Create {{ module }}',
+            '{{ module_snake }}.edit' => 'Edit {{ module }}',
+            '{{ module_snake }}.delete' => 'Delete {{ module }}',
+            '{{ module_snake }}.manage' => 'Manage {{ module }}',
+        ];
+
+        foreach ($permissions as $name => $description) {
+            // Check if permission already exists
+            if (!Permission::where('name', $name)->where('guard_name', 'web')->exists()) {
+                Permission::create([
+                    'name' => $name,
+                    'guard_name' => 'web',
+                ]);
+            }
+        }
+    }
+
+    public function down(): void
+    {
+        // Remove module permissions
+        $permissions = [
+            '{{ module_snake }}.view',
+            '{{ module_snake }}.create',
+            '{{ module_snake }}.edit',
+            '{{ module_snake }}.delete',
+            '{{ module_snake }}.manage',
+        ];
+
+        foreach ($permissions as $name) {
+            Permission::where('name', $name)->delete();
+        }
+    }
+}; 

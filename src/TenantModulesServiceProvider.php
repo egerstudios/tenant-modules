@@ -8,13 +8,15 @@ use Egerstudios\TenantModules\Commands\ModuleEnableCommand;
 use Egerstudios\TenantModules\Commands\ModuleDisableCommand;
 use Egerstudios\TenantModules\Commands\ModuleListCommand;
 use Egerstudios\TenantModules\Commands\ModuleDeleteCommand;
+use Egerstudios\TenantModules\Providers\NavigationServiceProvider;
+use Egerstudios\TenantModules\Http\Middleware\ModuleAccessMiddleware;
 use Illuminate\Support\Facades\File;
 
 class TenantModulesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        \Log::info('TenantModulesServiceProvider: register method called');
+        // Register config
         $this->mergeConfigFrom(
             __DIR__.'/../config/modules.php', 'modules'
         );
@@ -22,13 +24,19 @@ class TenantModulesServiceProvider extends ServiceProvider
         // Register helper functions
         require_once __DIR__.'/helpers.php';
 
-        // Register module service providers
-        $this->registerModuleProviders();
+        // Register module route service provider
+        $this->app->register(Providers\ModuleRouteServiceProvider::class);
+
+        // Register navigation service provider
+        $this->app->register(NavigationServiceProvider::class);
     }
 
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        
+        // Register the module access middleware
+        $this->app['router']->aliasMiddleware('module', ModuleAccessMiddleware::class);
         
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -44,35 +52,31 @@ class TenantModulesServiceProvider extends ServiceProvider
                 __DIR__.'/../config/modules.php' => config_path('modules.php'),
             ], 'config');
         }
+
+        // Register module service providers
+        $this->registerModuleProviders();
     }
 
     protected function registerModuleProviders(): void
     {
-        \Log::info('TenantModulesServiceProvider: Scanning for module providers');
-        $modulesPath = base_path(config('modules.path', 'modules'));
-        if (!is_dir($modulesPath)) {
-            \Log::info('TenantModulesServiceProvider: No modules directory found');
-            return;
-        }
-
-        $modules = array_filter(scandir($modulesPath), function ($item) use ($modulesPath) {
-            return is_dir($modulesPath . '/' . $item) && !in_array($item, ['.', '..']);
+        // Get all modules that are enabled in their config
+        $modules = modules();
+        $enabledModules = array_filter(array_keys($modules), function($module) use ($modules) {
+            return $modules[$module]['enabled'] ?? false;
         });
 
-        foreach ($modules as $module) {
-            $configPath = $modulesPath . '/' . $module . '/config/module.php';
-            if (file_exists($configPath)) {
-                $config = require $configPath;
-                if ($config['enabled'] ?? false) {
-                    $providerClass = "Modules\\{$module}\\Providers\\{$module}ServiceProvider";
-                    \Log::info("TenantModulesServiceProvider: Checking for provider $providerClass");
-                    if (class_exists($providerClass)) {
-                        \Log::info("TenantModulesServiceProvider: Registering $providerClass");
-                        $this->app->register($providerClass);
-                    } else {
-                        \Log::warning("TenantModulesServiceProvider: Provider class $providerClass does not exist");
-                    }
-                }
+        // Filter to only those that are activated for the current tenant
+        $tenantEnabledModules = \Egerstudios\TenantModules\Models\Module::whereIn('name', $enabledModules)
+            ->whereHas('tenants', function ($query) {
+                $query->where('tenant_modules.is_active', true);
+            })
+            ->pluck('name')
+            ->toArray();
+
+        foreach ($tenantEnabledModules as $module) {
+            $providerClass = "Modules\\{$module}\\Providers\\{$module}ServiceProvider";
+            if (class_exists($providerClass)) {
+                $this->app->register($providerClass);
             }
         }
     }

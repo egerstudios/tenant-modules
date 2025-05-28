@@ -14,6 +14,7 @@ trait HasModules
     {
         return $this->belongsToMany(Module::class, 'tenant_modules')
             ->using(\Egerstudios\TenantModules\Models\TenantModule::class)
+            ->withPivot('is_active', 'activated_at', 'deactivated_at', 'settings', 'last_billed_at', 'billing_cycle')
             ->withTimestamps();
     }
 
@@ -31,7 +32,7 @@ trait HasModules
      */
     public function listActiveModules(): array
     {
-        return $this->activeModules()->pluck('name')->toArray();
+        return $this->activeModules()->toArray();
     }
 
     /**

@@ -1,5 +1,5 @@
 name: {{ $name }}
-description: {{ $description }}
+description: ''
 version: 1.0.0
 enabled: true
 providers:

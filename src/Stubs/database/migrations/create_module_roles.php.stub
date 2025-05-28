@@ -1,0 +1,62 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Create module roles
+        $roles = [
+            '{{ module_snake }}-manager' => [
+                'name' => '{{ module }} Manager',
+                'permissions' => [
+                    '{{ module_snake }}.view',
+                    '{{ module_snake }}.create',
+                    '{{ module_snake }}.edit',
+                    '{{ module_snake }}.delete',
+                    '{{ module_snake }}.manage',
+                ]
+            ],
+            '{{ module_snake }}-user' => [
+                'name' => '{{ module }} User',
+                'permissions' => [
+                    '{{ module_snake }}.view',
+                    '{{ module_snake }}.create',
+                    '{{ module_snake }}.edit',
+                ]
+            ],
+        ];
+
+        foreach ($roles as $roleName => $roleData) {
+            // Check if role already exists
+            $role = Role::firstOrCreate(
+                ['name' => $roleName, 'guard_name' => 'web'],
+                ['name' => $roleName, 'guard_name' => 'web']
+            );
+
+            // Get permissions that exist
+            $permissions = Permission::whereIn('name', $roleData['permissions'])->get();
+            
+            // Sync permissions (this will add missing and remove extra permissions)
+            $role->syncPermissions($permissions);
+        }
+    }
+
+    public function down(): void
+    {
+        // Remove module roles
+        $roles = [
+            '{{ module_snake }}-manager',
+            '{{ module_snake }}-user',
+        ];
+
+        foreach ($roles as $roleName) {
+            Role::where('name', $roleName)->delete();
+        }
+    }
+}; 

@@ -5,6 +5,13 @@ namespace Egerstudios\TenantModules\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Egerstudios\TenantModules\Models\Module;
+use Egerstudios\TenantModules\Models\ModuleLog;
+use Illuminate\Support\Facades\Artisan;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\Tenant;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ModuleDeleteCommand extends Command
 {
@@ -31,6 +38,46 @@ class ModuleDeleteCommand extends Command
                 return 1;
             }
             $this->warn("Module {$name} is in use by tenants. Proceeding with deletion...");
+
+            // Get all tenants using this module
+            $tenants = $module->tenants;
+            
+            foreach ($tenants as $tenant) {
+                $tenant->run(function () use ($name, $tenant) {
+                    // Delete module's migrations if they exist
+                    $migrationPath = "modules/{$name}/database/migrations";
+                    if (File::exists(database_path($migrationPath))) {
+                        $this->info("Rolling back migrations for module {$name}...");
+                        Artisan::call('migrate:rollback', [
+                            '--path' => $migrationPath,
+                            '--force' => true
+                        ]);
+                    }
+
+                    // Delete module's permissions if they exist
+                    if (Schema::hasTable('permissions')) {
+                        Permission::where('name', 'like', "{$name}.%")->delete();
+                    }
+                    
+                    // Delete module's roles if they exist
+                    if (Schema::hasTable('roles')) {
+                        Role::where('name', 'like', "{$name}-%")->delete();
+                    }
+                    
+                    // Delete module logs if they exist
+                    if (Schema::hasTable('module_logs')) {
+                        ModuleLog::where('module_name', $name)->delete();
+
+                        // Log the deletion
+                        ModuleLog::create([
+                            'tenant_id' => $tenant->id,
+                            'module_name' => $name,
+                            'action' => 'deleted',
+                            'occurred_at' => now()
+                        ]);
+                    }
+                });
+            }
         }
 
         // Delete module files
@@ -39,9 +86,14 @@ class ModuleDeleteCommand extends Command
             $this->info("Module files deleted successfully.");
         }
 
-        // Delete module record and related records
-        $module->tenants()->detach(); // Remove all tenant associations
-        $module->delete(); // Delete the module record
+        // Delete module record and related records in central context
+        DB::connection('mysql')->transaction(function () use ($module) {
+            // Remove all tenant associations
+            DB::table('tenant_modules')->where('module_id', $module->id)->delete();
+            
+            // Delete the module record
+            DB::table('modules')->where('id', $module->id)->delete();
+        });
 
         $this->info("Module {$name} has been deleted successfully!");
         return 0;

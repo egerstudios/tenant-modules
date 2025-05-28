@@ -20,11 +20,6 @@ return new class extends Migration
             $table->string('billing_cycle')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')
-                ->references('id')
-                ->on('tenants')
-                ->onDelete('cascade');
-
             $table->unique(['tenant_id', 'module_id']);
         });
     }

@@ -1,85 +1,11 @@
 <?php
 
-namespace Modules\{{ $name }}\Providers;
+namespace Modules\{{ module }}\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\View;
+use Egerstudios\TenantModules\BaseModuleServiceProvider;
 
-class {{ $name }}ServiceProvider extends ServiceProvider
+class {{ module }}ServiceProvider extends BaseModuleServiceProvider
 {
-    protected string $moduleName = '{{ $name }}';
-    protected string $moduleNameLower = '{{ strtolower($name) }}';
-
-    public function register(): void
-    {
-        // Register module config
-        $this->mergeConfigFrom(
-            module_path($this->moduleName, 'config/module.php'), $this->moduleNameLower
-        );
-    }
-
-    public function boot(): void
-    {
-        // Register module routes
-        $this->registerRoutes();
-
-        // Register module views
-        $this->registerViews();
-
-        // Register module commands
-        $this->registerCommands();
-
-        // Register module migrations
-        $this->loadMigrationsFrom(module_path($this->moduleName, 'database/migrations'));
-
-        // Register module translations
-        $this->loadTranslationsFrom(module_path($this->moduleName, 'lang'), $this->moduleNameLower);
-
-        // Auto-discover Livewire components
-        if (class_exists(\Livewire\Livewire::class)) {
-            \Livewire\Livewire::discoverComponents(
-                base_path("modules/{{ $name }}/app/Livewire"),
-                'Modules\\{{ $name }}\\Livewire'
-            );
-        }
-
-        // Auto-discover Volt components
-        if (function_exists('Volt\\discover')) {
-            \Volt\discover(base_path("modules/{{ $name }}/resources/components"), '{{ strtolower($name) }}');
-        }
-    }
-
-    protected function registerRoutes(): void
-    {
-        Route::group([
-            'prefix' => $this->moduleNameLower,
-            'middleware' => ['web','tenant','auth'],
-            'namespace' => "Modules\\{$this->moduleName}\\Http\\Controllers",
-        ], function () {
-            $this->loadRoutesFrom(module_path($this->moduleName, 'routes/tenant.php'));
-        });
-
-        Route::group([
-            'prefix' => 'api/' . $this->moduleNameLower,
-            'middleware' => ['api'],
-            'namespace' => "Modules\\{$this->moduleName}\\Http\\Controllers",
-        ], function () {
-            $this->loadRoutesFrom(module_path($this->moduleName, 'routes/api.php'));
-        });
-    }
-
-    protected function registerViews(): void
-    {
-        View::addNamespace($this->moduleNameLower, module_path($this->moduleName, 'resources/views'));
-    }
-
-    protected function registerCommands(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                // Register your module's commands here
-            ]);
-        }
-    }
+    // Override any methods from BaseModuleServiceProvider if needed
+    // Add any module-specific functionality here
 } 

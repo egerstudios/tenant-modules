@@ -15,8 +15,6 @@ return new class extends Migration
             $table->string('action'); // 'enabled' or 'disabled'
             $table->timestamp('occurred_at');
             $table->timestamps();
-
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
         });
     }
 
