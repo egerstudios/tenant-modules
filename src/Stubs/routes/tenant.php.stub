@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::group(['middleware' => ['web']], function () {
+Route::group(['middleware' => ['web', 'auth', 'tenant']], function () {
     Route::get('/', function () {
         return view('{{ $nameLower }}::welcome');
-    });
+    })->name('{{ $nameLower }}.index');
 
     Route::get('/info', function () {
         return view('{{ $nameLower }}::moduleinfo', [
@@ -23,5 +23,5 @@ Route::group(['middleware' => ['web']], function () {
             'version' => '1.0.0',
             'nameLower' => '{{ $nameLower }}'
         ]);
-    });
+    })->name('{{ $nameLower }}.info');
 }); 

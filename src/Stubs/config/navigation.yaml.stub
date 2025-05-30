@@ -4,12 +4,9 @@ items:
     route: {{ module_snake }}.index
     permission: {{ module_snake }}.view
     children:
-      - label: List
+      - label: Welcome
         route: {{ module_snake }}.index
         permission: {{ module_snake }}.view
-      - label: Create
-        route: {{ module_snake }}.create
-        permission: {{ module_snake }}.create
-      - label: Settings
-        route: {{ module_snake }}.settings
-        permission: {{ module_snake }}.manage 
+      - label: Module Info
+        route: {{ module_snake }}.info
+        permission: {{ module_snake }}.view 

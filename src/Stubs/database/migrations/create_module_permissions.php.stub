@@ -19,13 +19,10 @@ return new class extends Migration
         ];
 
         foreach ($permissions as $name => $description) {
-            // Check if permission already exists
-            if (!Permission::where('name', $name)->where('guard_name', 'web')->exists()) {
-                Permission::create([
-                    'name' => $name,
-                    'guard_name' => 'web',
-                ]);
-            }
+            Permission::firstOrCreate(
+                ['name' => $name, 'guard_name' => 'web'],
+                ['name' => $name, 'guard_name' => 'web']
+            );
         }
     }
 
