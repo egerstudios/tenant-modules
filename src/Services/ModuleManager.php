@@ -354,7 +354,7 @@ class ModuleManager
             Log::info("Running setup for module {$moduleName}");
 
             // Step 1: Run database migrations for the module
-            $migrationPath = base_path("modules/{$moduleName}/database/migrations");
+            $migrationPath = base_path("modules/" . strtolower($moduleName) . "/database/migrations");
             if (is_dir($migrationPath)) {
                 Log::info("Running tenants:migrate for module {$moduleName}");
                 
@@ -369,21 +369,9 @@ class ModuleManager
             }
 
             // Step 2: Run database seeders for roles, permissions, and default data
-            // Check both possible directory names (case-insensitive)
-            $seederDirs = [
-                base_path("modules/{$moduleName}/database/seeders"),
-                base_path("modules/{$moduleName}/database/Seeders")
-            ];
+            $seederDir = base_path("modules/" . strtolower($moduleName) . "/database/seeders");
 
-            $seederDir = null;
-            foreach ($seederDirs as $dir) {
-                if (is_dir($dir)) {
-                    $seederDir = $dir;
-                    break;
-                }
-            }
-
-            if ($seederDir) {
+            if (is_dir($seederDir)) {
                 Log::info("Found seeder directory for module {$moduleName}: {$seederDir}");
                 
                 // Process all PHP files in the seeders directory
