@@ -369,21 +369,53 @@ class ModuleManager
             }
 
             // Step 2: Run database seeders for roles, permissions, and default data
-            $seederDir = base_path("modules/{$moduleName}/database/seeders");
-            if (is_dir($seederDir)) {
+            // Check both possible directory names (case-insensitive)
+            $seederDirs = [
+                base_path("modules/{$moduleName}/database/seeders"),
+                base_path("modules/{$moduleName}/database/Seeders")
+            ];
+
+            $seederDir = null;
+            foreach ($seederDirs as $dir) {
+                if (is_dir($dir)) {
+                    $seederDir = $dir;
+                    break;
+                }
+            }
+
+            if ($seederDir) {
+                Log::info("Found seeder directory for module {$moduleName}: {$seederDir}");
+                
                 // Process all PHP files in the seeders directory
-                foreach (glob($seederDir . '/*.php') as $seederFile) {
-                    // Construct the fully qualified class name
-                    $seederClass = "Modules\\{$moduleName}\\Database\\Seeders\\" . pathinfo($seederFile, PATHINFO_FILENAME);
+                $seederFiles = glob($seederDir . '/*.php');
+                
+                if (empty($seederFiles)) {
+                    Log::info("No seeder files found in directory: {$seederDir}");
+                    return;
+                }
+
+                foreach ($seederFiles as $seederFile) {
+                    $seederName = pathinfo($seederFile, PATHINFO_FILENAME);
+                    $seederClass = "Modules\\{$moduleName}\\Database\\Seeders\\{$seederName}";
+                    
+                    Log::info("Checking seeder class: {$seederClass}");
                     
                     if (class_exists($seederClass)) {
-                        Log::info("Seeding: {$seederClass}");
+                        Log::info("Running seeder: {$seederClass}");
                         
-                        // Use tenant-aware seeding command
-                        Artisan::call('tenants:seed', [
-                            '--class' => $seederClass,
-                            '--force' => true  // Skip confirmation prompts
-                        ]);
+                        try {
+                            // Use tenant-aware seeding command
+                            Artisan::call('tenants:seed', [
+                                '--class' => $seederClass,
+                                '--force' => true  // Skip confirmation prompts
+                            ]);
+                            
+                            Log::info("Successfully ran seeder: {$seederClass}");
+                        } catch (\Exception $e) {
+                            Log::error("Failed to run seeder {$seederClass}: {$e->getMessage()}");
+                        }
+                    } else {
+                        Log::warning("Seeder class not found: {$seederClass}");
                     }
                 }
             } else {
