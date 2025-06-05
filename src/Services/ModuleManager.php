@@ -426,8 +426,28 @@ class ModuleManager
             $modulePermissions = Permission::where('name', 'like', "{$moduleName}.%")->get();
 
             if ($modulePermissions->isEmpty()) {
-                Log::info("No permissions found for module {$moduleName}");
-                return;
+                Log::info("No permissions found for module {$moduleName}, checking for permission seeder");
+                
+                // Check if there's a permission seeder for this module
+                $seederClass = "Modules\\{$moduleName}\\Database\\Seeders\\PermissionSeeder";
+                if (class_exists($seederClass)) {
+                    Log::info("Running permission seeder for module {$moduleName}");
+                    Artisan::call('tenants:seed', [
+                        '--class' => $seederClass,
+                        '--force' => true
+                    ]);
+                    
+                    // Re-fetch permissions after seeding
+                    $modulePermissions = Permission::where('name', 'like', "{$moduleName}.%")->get();
+                    
+                    if ($modulePermissions->isEmpty()) {
+                        Log::warning("Still no permissions found for module {$moduleName} after running seeder");
+                        return;
+                    }
+                } else {
+                    Log::warning("No permission seeder found for module {$moduleName}");
+                    return;
+                }
             }
 
             // Define role-based permission mapping with hierarchical access
