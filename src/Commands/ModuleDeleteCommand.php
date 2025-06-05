@@ -6,19 +6,19 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Egerstudios\TenantModules\Models\Module;
 use Egerstudios\TenantModules\Models\ModuleLog;
+use Egerstudios\TenantModules\Services\ModuleManager;
 use Illuminate\Support\Facades\Artisan;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class ModuleDeleteCommand extends Command
 {
     protected $signature = 'module:delete {name} {--force}';
     protected $description = 'Delete a module and its database record';
 
-    public function handle()
+    public function handle(ModuleManager $moduleManager): int
     {
         $name = $this->argument('name');
         $force = $this->option('force');
@@ -95,7 +95,7 @@ class ModuleDeleteCommand extends Command
             DB::table('modules')->where('id', $module->id)->delete();
         });
 
-        $this->info("Module {$name} has been deleted successfully!");
+        $this->info("✅ Module {$name} has been deleted successfully!");
         return 0;
     }
 } 

@@ -3,7 +3,7 @@
 namespace Egerstudios\TenantModules\Tests;
 
 use Illuminate\Support\Facades\File;
-use Egerstudios\TenantModules\ModuleManager;
+use Egerstudios\TenantModules\Services\ModuleManager;
 
 class ModuleManagerTest extends TestCase
 {

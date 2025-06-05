@@ -6,6 +6,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Event;
+use Symfony\Component\Yaml\Yaml;
+use Egerstudios\TenantModules\Events\ModuleStateChanged;
+use Egerstudios\TenantModules\Services\ModuleManager;
 
 /**
  * NavigationServiceProvider
@@ -14,10 +18,6 @@ use Illuminate\Support\Facades\Log;
  * 1. Managing navigation items for all modules
  * 2. Providing a Blade directive (@moduleNavigation) for rendering navigation
  * 3. Handling permission-based navigation visibility
- * 
- * The NavigationServiceProvider works in conjunction with:
- * - ModuleServiceProvider: Provides the module navigation data
- * - ModuleManager: Manages which modules are active
  */
 class NavigationServiceProvider extends ServiceProvider
 {
@@ -42,26 +42,74 @@ class NavigationServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Log::debug('NavigationServiceProvider booting');
+        
         // Register the @moduleNavigation directive
         Blade::directive('moduleNavigation', function () {
             return "<?php echo \$__env->make('components.navigation.module-navigation', ['navigation' => \$moduleNavigation ?? []], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
         });
 
+        // Listen for module state changes
+        Event::listen(ModuleStateChanged::class, [$this, 'handleModuleStateChange']);
+
+        // Listen for tenant switching events
+        Event::listen('Stancl\Tenancy\Events\TenancyBootstrapped', function ($event) {
+            Log::debug('Tenancy bootstrapped, refreshing navigation', [
+                'tenant_id' => $event->tenancy->tenant->id
+            ]);
+            $this->refreshNavigationForTenant($event->tenancy->tenant);
+        });
+
+        Event::listen('Stancl\Tenancy\Events\TenancyEnded', function () {
+            Log::debug('Tenancy ended, clearing navigation');
+            $this->navigationItems = [];
+            View::share('moduleNavigation', []);
+        });
+
         // Share navigation items with all views after all modules are registered
         $this->app->booted(function () {
-            $flattenedNavigation = collect($this->navigationItems)->flatten(1)->toArray();
-            Log::debug('Flattened navigation items:', ['items' => $flattenedNavigation]);
-            View::share('moduleNavigation', $flattenedNavigation);
-
-            Log::debug('Navigation items registered:', [
-                'raw_items' => $this->navigationItems,
-                'flattened_items' => $flattenedNavigation
-            ]);
+            if (tenant()) {
+                $this->refreshNavigationForTenant(tenant());
+            }
         });
     }
 
     /**
-     * Register navigation items for a module.
+     * Handle module state changes
+     */
+    public function handleModuleStateChange(ModuleStateChanged $event): void
+    {
+        Log::debug("Handling module state change", [
+            'module' => $event->moduleName,
+            'action' => $event->getAction()
+        ]);
+
+        if ($event->isEnabled()) {
+            // When module is enabled, we need to re-register its navigation items
+            $navigationPath = module_path($event->moduleName, 'config/navigation.yaml');
+            if (file_exists($navigationPath)) {
+                $navigation = Yaml::parseFile($navigationPath);
+                $this->registerModuleNavigation($event->moduleName, $navigation['items']);
+            }
+        } else {
+            // When module is disabled, remove its navigation items
+            $this->removeModuleNavigation($event->moduleName);
+        }
+        
+        $this->refreshSharedNavigation();
+    }
+
+    /**
+     * Remove navigation for a specific module
+     */
+    protected function removeModuleNavigation(string $moduleName): void
+    {
+        unset($this->navigationItems[$moduleName]);
+        Log::debug("Removed navigation for module {$moduleName}");
+    }
+
+    /**
+     * Register navigation items for a module
      */
     public function registerModuleNavigation(string $module, array $items): void
     {
@@ -87,72 +135,97 @@ class NavigationServiceProvider extends ServiceProvider
             'module' => $module,
             'updated_navigation_items' => $this->navigationItems
         ]);
+
+        $this->refreshSharedNavigation();
     }
 
     /**
-     * Get all registered navigation items.
+     * Get all registered navigation items
      */
     public function getNavigationItems(): array
     {
-        Log::debug('Getting navigation items:', [
-            'raw_items' => $this->navigationItems,
-            'flattened_items' => collect($this->navigationItems)->flatten(1)->toArray()
-        ]);
         return $this->navigationItems;
     }
 
     /**
-     * Render all navigation items.
+     * Get flattened navigation items
      */
-    public function render(): string
+    public function getFlattenedNavigationItems(): array
     {
-        Log::debug('Starting navigation render', ['navigation_items' => $this->navigationItems]);
+        $flattened = collect($this->navigationItems)->flatten(1)->values()->all();
         
-        $html = '';
-        foreach ($this->navigationItems as $module => $items) {
-            $moduleHtml = $this->renderModuleNavigation($module, $items);
-            Log::debug("Rendered HTML for module {$module}", ['html' => $moduleHtml]);
-            $html .= $moduleHtml;
-        }
+        Log::debug('Getting flattened navigation items', [
+            'raw_items' => $this->navigationItems,
+            'flattened_count' => count($flattened)
+        ]);
         
-        Log::debug('Final rendered navigation HTML', ['html' => $html]);
-        return $html;
+        return $flattened;
     }
 
     /**
-     * Render navigation items for a specific module.
+     * Refresh shared navigation data for all views
      */
-    protected function renderModuleNavigation(string $module, array $items): string
+    protected function refreshSharedNavigation(): void
     {
-        Log::debug("Rendering navigation for module: {$module}", [
-            'module' => $module,
-            'items' => $items,
-            'user_permissions' => auth()->user() ? auth()->user()->getAllPermissions()->pluck('name') : []
+        $flattenedNavigation = collect($this->navigationItems)->flatten(1)->toArray();
+        
+        Log::debug('Refreshing shared navigation', [
+            'items_count' => count($flattenedNavigation)
         ]);
         
-        $html = "<flux:navlist.group heading=\"{$module}\" class=\"grid\">";
-        
-        foreach ($items as $item) {
-            $icon = $item['icon'] ?? 'circle';
-            $route = $item['route'] ?? '#';
-            $label = $item['label'] ?? '';
-            $permission = $item['permission'] ?? null;
-            
-            if ($permission && !auth()->user()->can($permission)) {
-                Log::debug("Skipping navigation item due to missing permission", [
-                    'module' => $module,
-                    'item' => $item,
-                    'required_permission' => $permission
-                ]);
-                continue;
-            }
-
-            $html .= "<flux:navlist.item icon=\"{$icon}\" :href=\"route('{$route}')\" :current=\"request()->routeIs('{$route}')\" wire:navigate>{$label}</flux:navlist.item>";
+        // Clear the navigation cache for the current tenant
+        if (tenant()) {
+            cache()->forget("tenant." . tenant()->id . ".navigation");
         }
         
-        $html .= "</flux:navlist.group>";
-        
-        Log::debug("Generated HTML for module {$module}", ['html' => $html]);
-        return $html;
+        View::share('moduleNavigation', $flattenedNavigation);
     }
-} 
+
+    /**
+     * Check if a navigation item should be visible to current user
+     */
+    public function canViewNavigationItem(array $item): bool
+    {
+        if (!isset($item['permission'])) {
+            return true;
+        }
+
+        return auth()->user()?->can($item['permission']) ?? false;
+    }
+
+    /**
+     * Refresh navigation items for a specific tenant
+     */
+    protected function refreshNavigationForTenant($tenant): void
+    {
+        // Get all modules that are enabled for the tenant
+        $enabledModules = $tenant->modules()
+            ->wherePivot('is_active', true)
+            ->pluck('name')
+            ->toArray();
+        
+        Log::debug('Found enabled modules for tenant', [
+            'tenant_id' => $tenant->id,
+            'enabled_modules' => $enabledModules,
+            'current_navigation_items' => $this->navigationItems
+        ]);
+        
+        // Filter navigation items to only include enabled modules
+        $filteredNavigation = [];
+        foreach ($this->navigationItems as $moduleName => $items) {
+            if (in_array($moduleName, $enabledModules)) {
+                $filteredNavigation[$moduleName] = $items;
+            }
+        }
+        
+        $this->navigationItems = $filteredNavigation;
+        
+        Log::debug('Filtered navigation items', [
+            'enabled_modules' => $enabledModules,
+            'filtered_items' => $this->navigationItems
+        ]);
+
+        $flattenedNavigation = collect($this->navigationItems)->flatten(1)->toArray();
+        View::share('moduleNavigation', $flattenedNavigation);
+    }
+}

@@ -1,5 +1,19 @@
 {
-    "welcome": "Welcome to the {{ module }} module",
+    "navigation": {
+        "title": "{{ module }} Management",
+        "welcome": "Welcome",
+        "module_info": "Module Info"
+    },
+    "pages": {
+        "welcome": {
+            "title": "Welcome to the {{ module }} module",
+            "description": "This is the welcome page for the {{ module }} module"
+        },
+        "info": {
+            "title": "Module Information",
+            "description": "Information about the {{ module }} module"
+        }
+    },
     "actions": {
         "create": "Create",
         "edit": "Edit",

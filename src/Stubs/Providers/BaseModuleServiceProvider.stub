@@ -6,16 +6,19 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\Yaml\Yaml;
+use Egerstudios\TenantModules\Traits\HasTranslations;
 
 abstract class BaseModuleServiceProvider extends ServiceProvider
 {
+    use HasTranslations;
+
     protected string $moduleName;
     protected string $moduleNameLower;
 
     public function __construct($app)
     {
         parent::__construct($app);
-        $this->moduleName = class_basename($this);
+        $this->moduleName = str_replace('ServiceProvider', '', class_basename($this));
         $this->moduleNameLower = strtolower($this->moduleName);
     }
 
@@ -29,10 +32,8 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Register module routes
-        $this->registerRoutes();
-
         // Register module navigation
+        \Log::debug("Booting module {$this->moduleName}");
         $this->registerNavigation();
 
         // Register module views
@@ -66,9 +67,16 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
 
     protected function registerNavigation(): void
     {
+        \Log::debug("Registering navigation for module {$this->moduleName}");
         $navigationPath = module_path($this->moduleName, 'config/navigation.yaml');
+        \Log::debug("Registering navigation for module {$this->moduleName}", [
+            'path' => $navigationPath,
+            'exists' => file_exists($navigationPath)
+        ]);
+        
         if (file_exists($navigationPath)) {
             $navigation = Yaml::parseFile($navigationPath);
+            \Log::debug("Navigation config for {$this->moduleName}", ['config' => $navigation]);
             app('navigation')->registerModuleNavigation($this->moduleName, $navigation['items']);
         }
     }

@@ -5,16 +5,16 @@
 <x-layouts.{{ layout }}>
     <div class="pb-3">
         <flux:breadcrumbs>
-            <flux:breadcrumbs.item href="{{ route('dashboard') }}" icon="home"></flux:breadcrumbs.item>
+            <flux:breadcrumbs.item href="{{ route('{{ module_lower }}.index') }}" icon="home">
+                {{ module }}
+            </flux:breadcrumbs.item>
         </flux:breadcrumbs>
     </div>
 
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-        <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div class="col-span-3 p-4 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
-                <h2 class="text-xl font-bold mb-4">Welcome to the {{ module }} module!</h2>
-                <p>This is the default view for the {{ module }} module.</p>
-            </div>
+        <div class="col-span-3 p-4 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
+            <h2 class="text-xl font-bold mb-4">Welcome to {{ module }}</h2>
+            <p>This is the welcome page for the {{ module }} module.</p>
         </div>
     </div>
 </x-layouts.{{ layout }}> 

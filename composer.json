@@ -25,9 +25,17 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Egerstudios\\TenantModules\\TenantModulesServiceProvider"
+                "Egerstudios\\TenantModules\\Providers\\TenantModulesServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php artisan vendor:publish --tag=tenant-modules-migrations --force"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=tenant-modules-migrations --force"
+        ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true

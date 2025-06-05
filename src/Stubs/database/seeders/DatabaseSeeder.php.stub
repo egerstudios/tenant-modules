@@ -35,27 +35,39 @@ class {{ module }}DatabaseSeeder extends Seeder
                 ['name' => $name],
                 [
                     'name' => $name,
-                    'display_name' => $data['name'],
-                    'description' => $data['description'] ?? null,
+                    'guard_name' => 'web',
                 ]
             );
         }
 
         // Create roles and assign permissions
         foreach ($roles as $roleName => $roleData) {
-            $roleId = DB::table('roles')->insertGetId([
-                'name' => $roleName,
-                'display_name' => $roleData['name'],
-                'description' => $roleData['description'] ?? null,
-            ]);
-
-            foreach ($roleData['permissions'] as $permission) {
-                DB::table('role_has_permissions')->insert([
-                    'role_id' => $roleId,
-                    'permission_id' => DB::table('permissions')
-                        ->where('name', $permission)
-                        ->value('id'),
+            // Create or find the role
+            $role = DB::table('roles')->where('name', $roleName)->first();
+            if (!$role) {
+                $roleId = DB::table('roles')->insertGetId([
+                    'name' => $roleName,
+                    'guard_name' => 'web',
                 ]);
+            } else {
+                $roleId = $role->id;
+            }
+
+            // Clear existing permissions for this role
+            DB::table('role_has_permissions')->where('role_id', $roleId)->delete();
+
+            // Assign new permissions
+            foreach ($roleData['permissions'] as $permission) {
+                $permissionId = DB::table('permissions')
+                    ->where('name', $permission)
+                    ->value('id');
+                
+                if ($permissionId) {
+                    DB::table('role_has_permissions')->insert([
+                        'role_id' => $roleId,
+                        'permission_id' => $permissionId,
+                    ]);
+                }
             }
         }
     }

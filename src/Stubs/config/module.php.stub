@@ -3,41 +3,41 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Module Name
+    | Module Information
     |--------------------------------------------------------------------------
     |
-    | This is the name of the module.
+    | This section contains the basic information about the module.
     |
     */
-    'name' => '{{ $name }}',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Module Description
-    |--------------------------------------------------------------------------
-    |
-    | This is the description of the module.
-    |
-    */
-    'description' => '{{ $description }}',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Module Version
-    |--------------------------------------------------------------------------
-    |
-    | This is the version of the module.
-    |
-    */
+    'name' => '{{ module }}',
+    'description' => '{{ description }}',
     'version' => '1.0.0',
-
+    'author' => '{{ author }}',
+    
     /*
     |--------------------------------------------------------------------------
-    | Module Enabled
+    | Module Display Names
     |--------------------------------------------------------------------------
     |
-    | This determines if the module is enabled.
+    | These are the display names for the module in different languages.
+    | The key should match the locale code.
     |
     */
-    'enabled' => true,
+    'display_names' => [
+        'en' => '{{ module }} Management',
+        'nb-no' => '{{ module }} Styring',
+    ],
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Module Navigation
+    |--------------------------------------------------------------------------
+    |
+    | Navigation configuration for the module.
+    |
+    */
+    'navigation' => [
+        'icon' => 'module',
+        'order' => 1,
+    ],
 ]; 

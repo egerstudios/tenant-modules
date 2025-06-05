@@ -89,6 +89,7 @@ class ModuleMakeCommand extends Command
         $replacements = [
             '{{ module }}' => $name,
             '{{ module_snake }}' => \Illuminate\Support\Str::snake($name),
+            '{{ module_lower }}' => strtolower($name),
             '{{ description }}' => "The {$name} module",
             '{{ nameLower }}' => strtolower($name),
             '{{ $name }}' => $name,
@@ -227,6 +228,12 @@ class ModuleMakeCommand extends Command
             $replacements
         );
 
+        $this->createFileFromStub(
+            "$stubsPath/lang/nb-no.json.stub",
+            "$modulePath/lang/nb-no.json",
+            $replacements
+        );
+
         // Create console command
         $this->createFileFromStub(
             "$stubsPath/Console/Commands/ExampleCommand.php.stub",
@@ -328,18 +335,37 @@ class ModuleMakeCommand extends Command
         $migrationPath = $modulePath . '/database/migrations';
         $timestamp = date('Y_m_d_His');
 
+        $this->info("Creating migrations in: {$migrationPath}");
+
         // Create migration for module permissions
+        $permissionsPath = "{$migrationPath}/{$timestamp}_create_{$replacements['{{ module_snake }}']}_permissions.php";
+        $this->info("Creating permissions migration: {$permissionsPath}");
         $this->createFileFromStub(
             __DIR__ . '/../Stubs/database/migrations/create_module_permissions.php.stub',
-            "{$migrationPath}/{$timestamp}_create_{$replacements['{{ module_snake }}']}_permissions.php",
+            $permissionsPath,
             $replacements
         );
 
         // Create migration for module roles
+        $rolesPath = "{$migrationPath}/{$timestamp}_create_{$replacements['{{ module_snake }}']}_roles.php";
+        $this->info("Creating roles migration: {$rolesPath}");
         $this->createFileFromStub(
             __DIR__ . '/../Stubs/database/migrations/create_module_roles.php.stub',
-            "{$migrationPath}/{$timestamp}_create_{$replacements['{{ module_snake }}']}_roles.php",
+            $rolesPath,
             $replacements
         );
+    }
+
+    protected function getReplacements(): array
+    {
+        return [
+            'module' => $this->moduleName,
+            'module_lower' => strtolower($this->moduleName),
+            'module_snake' => Str::snake($this->moduleName),
+            'description' => $this->option('description') ?? "{$this->moduleName} module",
+            'author' => $this->option('author') ?? config('app.name', 'Laravel'),
+            'MIGRATIONS_PATH' => 'database/migrations',
+            'PATH_LANG' => 'lang',
+        ];
     }
 } 

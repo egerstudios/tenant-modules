@@ -3,7 +3,12 @@
 namespace Egerstudios\TenantModules\Providers;
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Egerstudios\TenantModules\Models\Module;
+use Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use Egerstudios\TenantModules\Http\Middleware\ModuleAccessMiddleware;
 
 class ModuleRouteServiceProvider extends ServiceProvider
 {
@@ -19,17 +24,27 @@ class ModuleRouteServiceProvider extends ServiceProvider
                 return $modules[$module]['enabled'] ?? false;
             });
 
-            // Filter to only those that are activated for the current tenant
-            $tenantEnabledModules = \Egerstudios\TenantModules\Models\Module::whereIn('name', $enabledModules)
-                ->whereHas('tenants', function ($query) {
-                    $query->where('tenant_modules.is_active', true);
-                })
-                ->pluck('name')
-                ->toArray();
+            // Check if the modules table exists before querying
+            if (!Schema::hasTable('modules')) {
+                return;
+            }
 
-            foreach ($tenantEnabledModules as $module) {
-                $this->registerModuleWebRoutes($module);
-                $this->registerModuleApiRoutes($module);
+            try {
+                // Filter to only those that are activated for the current tenant
+                $tenantEnabledModules = Module::whereIn('name', $enabledModules)
+                    ->whereHas('tenants', function ($query) {
+                        $query->where('tenant_modules.is_active', true);
+                    })
+                    ->pluck('name')
+                    ->toArray();
+
+                foreach ($tenantEnabledModules as $module) {
+                    $this->registerModuleWebRoutes($module);
+                    $this->registerModuleApiRoutes($module);
+                }
+            } catch (\Exception $e) {
+                // If there's any database error, just return without registering routes
+                return;
             }
         });
     }
@@ -43,7 +58,13 @@ class ModuleRouteServiceProvider extends ServiceProvider
         if (file_exists($routeFile)) {
             Route::group([
                 'prefix' => strtolower($module),
-                'middleware' => ['web', 'auth', 'tenant', 'module:' . strtolower($module)],
+                'middleware' => [
+                    'web',
+                    'auth',
+                    InitializeTenancyBySubdomain::class,
+                    PreventAccessFromCentralDomains::class,
+                    ModuleAccessMiddleware::class . ':' . strtolower($module)
+                ],
                 'namespace' => "Modules\\{$module}\\Http\\Controllers",
             ], function () use ($routeFile) {
                 $this->loadRoutesFrom($routeFile);
@@ -60,7 +81,12 @@ class ModuleRouteServiceProvider extends ServiceProvider
         if (file_exists($routeFile)) {
             Route::group([
                 'prefix' => 'api/' . strtolower($module),
-                'middleware' => ['api', 'module:' . strtolower($module)],
+                'middleware' => [
+                    'api',
+                    InitializeTenancyBySubdomain::class,
+                    PreventAccessFromCentralDomains::class,
+                    ModuleAccessMiddleware::class . ':' . strtolower($module)
+                ],
                 'namespace' => "Modules\\{$module}\\Http\\Controllers",
             ], function () use ($routeFile) {
                 $this->loadRoutesFrom($routeFile);

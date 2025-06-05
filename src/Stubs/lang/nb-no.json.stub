@@ -1,0 +1,29 @@
+{
+    "navigation": {
+        "title": "{{ module }} Styring",
+        "welcome": "Velkommen",
+        "module_info": "Modul Info"
+    },
+    "pages": {
+        "welcome": {
+            "title": "Velkommen til {{ module }} modulen",
+            "description": "Dette er velkomstsiden for {{ module }} modulen"
+        },
+        "info": {
+            "title": "Modul Informasjon",
+            "description": "Informasjon om {{ module }} modulen"
+        }
+    },
+    "actions": {
+        "create": "Opprett",
+        "edit": "Rediger",
+        "delete": "Slett",
+        "save": "Lagre",
+        "cancel": "Avbryt"
+    },
+    "messages": {
+        "created": "Ressurs opprettet",
+        "updated": "Ressurs oppdatert",
+        "deleted": "Ressurs slettet"
+    }
+} 

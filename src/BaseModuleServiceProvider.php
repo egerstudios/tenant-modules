@@ -6,9 +6,12 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\Yaml\Yaml;
+use Egerstudios\TenantModules\Traits\HasTranslations;
 
 abstract class BaseModuleServiceProvider extends ServiceProvider
 {
+    use HasTranslations;
+
     protected string $moduleName;
     protected string $moduleNameLower;
 
