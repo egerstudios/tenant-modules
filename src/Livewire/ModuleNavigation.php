@@ -41,14 +41,13 @@ class ModuleNavigation extends Component
             'component_id' => $this->getId()
         ]);
         return [
-            $channel . ',.module.enabled' => 'handleModuleEnabled',
-            $channel . ',.module.disabled' => 'handleModuleDisabled',
+            $channel . ',.module-state-changed' => 'handleModuleStateChanged',
         ];
     }
 
-    public function handleModuleEnabled($event)
+    public function handleModuleStateChanged($event)
     {
-        Log::debug('Module enabled event received in Livewire component', [
+        Log::debug('Module state changed event received in Livewire component', [
             'raw_event' => $event,
             'event_type' => gettype($event),
             'event_keys' => is_array($event) ? array_keys($event) : 'not an array',
@@ -63,32 +62,13 @@ class ModuleNavigation extends Component
         }
         
         $this->dispatch('console-log', [
-            'message' => 'Livewire received module enabled event',
+            'message' => 'Livewire received module state changed event',
             'raw_event' => $event,
             'module' => is_array($event) ? ($event['module']['name'] ?? 'unknown') : 'unknown',
             'tenant_id' => is_array($event) ? ($event['tenant_id'] ?? 'unknown') : 'unknown',
+            'action' => is_array($event) ? ($event['action'] ?? 'unknown') : 'unknown',
             'component_id' => $this->getId()
         ]);
-        $this->loadNavigation();
-    }
-
-    public function handleModuleDisabled($event)
-    {
-        Log::debug('Module disabled event received in Livewire component', [
-            'raw_event' => $event,
-            'event_type' => gettype($event),
-            'event_keys' => is_array($event) ? array_keys($event) : 'not an array',
-            'component_id' => $this->getId()
-        ]);
-        
-        // Log the full event structure
-        if (is_array($event)) {
-            foreach ($event as $key => $value) {
-                Log::debug("Event key: {$key}", ['value' => $value]);
-            }
-        }
-
-        // Reload navigation after module is disabled
         $this->loadNavigation();
     }
 

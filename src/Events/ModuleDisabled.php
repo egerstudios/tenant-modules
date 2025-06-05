@@ -8,22 +8,13 @@ use Egerstudios\TenantModules\Models\Module;
 class ModuleDisabled extends ModuleStateChanged
 {
     /**
-     * Get the broadcast event name.
+     * Create a new event instance.
      */
-    public function broadcastAs(): string
-    {
-        return 'module.disabled';
-    }
-
-    /**
-     * Get the data to broadcast.
-     *
-     * @return array<string, mixed>
-     */
-    public function broadcastWith(): array
-    {
-        return array_merge(parent::broadcastWith(), [
-            'action' => 'disabled',
-        ]);
+    public function __construct(
+        public Tenant $tenant,
+        public Module $module,
+        public array $moduleData = []
+    ) {
+        parent::__construct($tenant, $module, $moduleData);
     }
 } 

@@ -66,12 +66,8 @@
 
     // Listen for both module events
     window.Echo.private(channelName)
-        .listen('.module.enabled', (e) => {
-            console.log('Module enabled event received:', e);
-            // The Livewire component will handle the navigation update
-        })
-        .listen('.module.disabled', (e) => {
-            console.log('Module disabled event received:', e);
+        .listen('.module-state-changed', (e) => {
+            console.log('Module state changed event received:', e);
             // The Livewire component will handle the navigation update
         })
         .error((error) => {
