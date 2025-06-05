@@ -495,11 +495,14 @@ class ModuleManager
      */
     protected function logModuleAction(Tenant $tenant, string $moduleName, string $action): void
     {
-        ModuleLog::create([
-            'tenant_id' => $tenant->id,
-            'module_name' => $moduleName,
-            'action' => $action,
-            'occurred_at' => now()
-        ]);
+        // Execute within tenant database context
+        $tenant->run(function () use ($tenant, $moduleName, $action) {
+            ModuleLog::create([
+                'tenant_id' => $tenant->id,
+                'module_name' => $moduleName,
+                'action' => $action,
+                'occurred_at' => now()
+            ]);
+        });
     }
 }

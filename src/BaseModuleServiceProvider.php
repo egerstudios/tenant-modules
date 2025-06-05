@@ -42,9 +42,6 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         // Register module commands
         $this->registerCommands();
 
-        // Register module migrations
-        $this->loadMigrationsFrom(module_path($this->moduleName, 'database/migrations'));
-
         // Register module translations
         $this->loadTranslationsFrom(module_path($this->moduleName, 'lang'), $this->moduleNameLower);
 
