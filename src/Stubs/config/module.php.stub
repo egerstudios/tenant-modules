@@ -16,20 +16,6 @@ return [
     
     /*
     |--------------------------------------------------------------------------
-    | Module Display Names
-    |--------------------------------------------------------------------------
-    |
-    | These are the display names for the module in different languages.
-    | The key should match the locale code.
-    |
-    */
-    'display_names' => [
-        'en' => '{{ module }} Management',
-        'nb-no' => '{{ module }} Styring',
-    ],
-    
-    /*
-    |--------------------------------------------------------------------------
     | Module Navigation
     |--------------------------------------------------------------------------
     |
@@ -40,4 +26,14 @@ return [
         'icon' => 'module',
         'order' => 1,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Enabled
+    |--------------------------------------------------------------------------
+    |
+    | This determines if the module is enabled.
+    |
+    */
+    'enabled' => true,
 ]; 
