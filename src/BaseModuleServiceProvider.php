@@ -42,7 +42,20 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             'exists' => is_dir($langPath),
             'files' => is_dir($langPath) ? scandir($langPath) : []
         ]);
+        
+        // Load translations with explicit namespace
         $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
+        
+        // Debug available translations
+        $locale = app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale');
+        \Log::debug("Available translations", [
+            'module' => $this->moduleName,
+            'namespace' => $this->moduleNameLower,
+            'current_locale' => $locale,
+            'fallback_locale' => $fallbackLocale,
+            'translations' => trans()->getLoader()->load($locale, $this->moduleNameLower)
+        ]);
         
         $this->registerNavigation();
 
@@ -105,20 +118,30 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             // Translate label if it exists
             if (isset($item['label'])) {
                 // Get the translation using the module's translation namespace
-                $translated = trans("{$this->moduleNameLower}::{$item['label']}");
+                $key = $item['label'];
+                $translated = trans("{$this->moduleNameLower}::{$key}");
                 
                 \Log::debug("Processing translation", [
                     'module' => $this->moduleName,
-                    'key' => $item['label'],
-                    'full_key' => "{$this->moduleNameLower}::{$item['label']}",
-                    'translated' => $translated
+                    'key' => $key,
+                    'full_key' => "{$this->moduleNameLower}::{$key}",
+                    'translated' => $translated,
+                    'available_translations' => trans()->getLoader()->load(app()->getLocale(), $this->moduleNameLower)
                 ]);
                 
-                // If translation is the same as the key, it means no translation was found
-                if ($translated === "{$this->moduleNameLower}::{$item['label']}") {
-                    \Log::warning("Translation not found for key: {$item['label']} in module {$this->moduleName}");
-                    // Fallback to the original label without the namespace
-                    $translated = $item['label'];
+                // If translation is the same as the key, try without the namespace
+                if ($translated === "{$this->moduleNameLower}::{$key}") {
+                    $translated = trans($key);
+                    \Log::debug("Trying translation without namespace", [
+                        'key' => $key,
+                        'translated' => $translated
+                    ]);
+                }
+                
+                // If still no translation found, use the original key
+                if ($translated === $key || $translated === "{$this->moduleNameLower}::{$key}") {
+                    \Log::warning("Translation not found for key: {$key} in module {$this->moduleName}");
+                    $translated = $key;
                 }
                 
                 $item['label'] = $translated;
