@@ -46,16 +46,29 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         // Load translations with explicit namespace
         $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
         
-        // Debug available translations
+        // Load JSON translations explicitly
         $locale = app()->getLocale();
         $fallbackLocale = config('app.fallback_locale');
-        \Log::debug("Available translations", [
-            'module' => $this->moduleName,
-            'namespace' => $this->moduleNameLower,
-            'current_locale' => $locale,
-            'fallback_locale' => $fallbackLocale,
-            'translations' => trans()->getLoader()->load($locale, $this->moduleNameLower)
-        ]);
+        
+        // Load current locale translations
+        $currentLocalePath = "{$langPath}/{$locale}.json";
+        if (file_exists($currentLocalePath)) {
+            $currentTranslations = json_decode(file_get_contents($currentLocalePath), true);
+            \Log::debug("Loaded current locale translations", [
+                'locale' => $locale,
+                'translations' => $currentTranslations
+            ]);
+        }
+        
+        // Load fallback locale translations
+        $fallbackLocalePath = "{$langPath}/{$fallbackLocale}.json";
+        if (file_exists($fallbackLocalePath)) {
+            $fallbackTranslations = json_decode(file_get_contents($fallbackLocalePath), true);
+            \Log::debug("Loaded fallback locale translations", [
+                'locale' => $fallbackLocale,
+                'translations' => $fallbackTranslations
+            ]);
+        }
         
         $this->registerNavigation();
 
@@ -119,32 +132,42 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             if (isset($item['label'])) {
                 // Get the translation using the module's translation namespace
                 $key = $item['label'];
-                $translated = trans("{$this->moduleNameLower}::{$key}");
+                
+                // Try to get translation from JSON file directly
+                $locale = app()->getLocale();
+                $fallbackLocale = config('app.fallback_locale');
+                $langPath = module_path($this->moduleName, 'lang');
+                
+                // Try current locale first
+                $currentLocalePath = "{$langPath}/{$locale}.json";
+                $translated = null;
+                
+                if (file_exists($currentLocalePath)) {
+                    $translations = json_decode(file_get_contents($currentLocalePath), true);
+                    $translated = data_get($translations, $key);
+                }
+                
+                // If not found, try fallback locale
+                if (!$translated && file_exists("{$langPath}/{$fallbackLocale}.json")) {
+                    $translations = json_decode(file_get_contents("{$langPath}/{$fallbackLocale}.json"), true);
+                    $translated = data_get($translations, $key);
+                }
                 
                 \Log::debug("Processing translation", [
                     'module' => $this->moduleName,
                     'key' => $key,
-                    'full_key' => "{$this->moduleNameLower}::{$key}",
                     'translated' => $translated,
-                    'available_translations' => trans()->getLoader()->load(app()->getLocale(), $this->moduleNameLower)
+                    'current_locale' => $locale,
+                    'fallback_locale' => $fallbackLocale
                 ]);
                 
-                // If translation is the same as the key, try without the namespace
-                if ($translated === "{$this->moduleNameLower}::{$key}") {
-                    $translated = trans($key);
-                    \Log::debug("Trying translation without namespace", [
-                        'key' => $key,
-                        'translated' => $translated
-                    ]);
-                }
-                
-                // If still no translation found, use the original key
-                if ($translated === $key || $translated === "{$this->moduleNameLower}::{$key}") {
+                // If translation found, use it
+                if ($translated) {
+                    $item['label'] = $translated;
+                } else {
                     \Log::warning("Translation not found for key: {$key} in module {$this->moduleName}");
-                    $translated = $key;
+                    $item['label'] = $key;
                 }
-                
-                $item['label'] = $translated;
             }
             
             // Process children recursively if they exist
