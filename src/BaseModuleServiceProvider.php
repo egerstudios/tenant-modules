@@ -34,6 +34,16 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
     {
         // Register module navigation
         \Log::debug("Booting module {$this->moduleName}");
+        
+        // Register module translations
+        $langPath = module_path($this->moduleName, 'lang');
+        \Log::debug("Loading translations for {$this->moduleName}", [
+            'path' => $langPath,
+            'exists' => is_dir($langPath),
+            'files' => is_dir($langPath) ? scandir($langPath) : []
+        ]);
+        $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
+        
         $this->registerNavigation();
 
         // Register module views
@@ -41,9 +51,6 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
 
         // Register module commands
         $this->registerCommands();
-
-        // Register module translations
-        $this->loadTranslationsFrom(module_path($this->moduleName, 'lang'), $this->moduleNameLower);
 
         // Auto-register Livewire components in this module
         if (class_exists(\Livewire\Livewire::class)) {
@@ -74,7 +81,53 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         if (file_exists($navigationPath)) {
             $navigation = Yaml::parseFile($navigationPath);
             \Log::debug("Navigation config for {$this->moduleName}", ['config' => $navigation]);
+            
+            // Process translations in navigation items
+            $this->processNavigationTranslations($navigation['items']);
+            
+            // Debug the processed items
+            \Log::debug("Processed navigation items for {$this->moduleName}", [
+                'items' => $navigation['items'],
+                'current_locale' => app()->getLocale(),
+                'fallback_locale' => config('app.fallback_locale')
+            ]);
+            
             app('navigation')->registerModuleNavigation($this->moduleName, $navigation['items']);
+        }
+    }
+
+    /**
+     * Process translations in navigation items recursively
+     */
+    protected function processNavigationTranslations(array &$items): void
+    {
+        foreach ($items as &$item) {
+            // Translate label if it exists
+            if (isset($item['label'])) {
+                // Get the translation using the module's translation namespace
+                $translated = trans("{$this->moduleNameLower}::{$item['label']}");
+                
+                \Log::debug("Processing translation", [
+                    'module' => $this->moduleName,
+                    'key' => $item['label'],
+                    'full_key' => "{$this->moduleNameLower}::{$item['label']}",
+                    'translated' => $translated
+                ]);
+                
+                // If translation is the same as the key, it means no translation was found
+                if ($translated === "{$this->moduleNameLower}::{$item['label']}") {
+                    \Log::warning("Translation not found for key: {$item['label']} in module {$this->moduleName}");
+                    // Fallback to the original label without the namespace
+                    $translated = $item['label'];
+                }
+                
+                $item['label'] = $translated;
+            }
+            
+            // Process children recursively if they exist
+            if (isset($item['children']) && is_array($item['children'])) {
+                $this->processNavigationTranslations($item['children']);
+            }
         }
     }
 

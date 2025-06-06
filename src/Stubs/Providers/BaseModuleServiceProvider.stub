@@ -77,7 +77,29 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         if (file_exists($navigationPath)) {
             $navigation = Yaml::parseFile($navigationPath);
             \Log::debug("Navigation config for {$this->moduleName}", ['config' => $navigation]);
+            
+            // Process translations in navigation items
+            $this->processNavigationTranslations($navigation['items']);
+            
             app('navigation')->registerModuleNavigation($this->moduleName, $navigation['items']);
+        }
+    }
+
+    /**
+     * Process translations in navigation items recursively
+     */
+    protected function processNavigationTranslations(array &$items): void
+    {
+        foreach ($items as &$item) {
+            // Translate label if it exists
+            if (isset($item['label'])) {
+                $item['label'] = $this->trans("navigation.{$item['label']}");
+            }
+            
+            // Process children recursively if they exist
+            if (isset($item['children']) && is_array($item['children'])) {
+                $this->processNavigationTranslations($item['children']);
+            }
         }
     }
 

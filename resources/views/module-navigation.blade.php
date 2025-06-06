@@ -36,7 +36,7 @@
         @empty
             <div class="flex flex-col items-center py-4 text-gray-500">
                 <flux:icon.puzzle-piece class="w-8 h-8 mb-2" />
-                <span class="text-sm">No modules available</span>
+                <span class="text-sm">{{ __('tenant::No modules available') }}</span>
             </div>
         @endforelse
     </flux:navlist>

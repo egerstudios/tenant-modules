@@ -1,12 +1,12 @@
 items:
-  - label: {{ module }}
+  - label: title
     icon: module
     route: {{ module_lower }}.index
     permission: {{ module_lower }}.view
     children:
-      - label: Welcome
+      - label: welcome
         route: {{ module_lower }}.index
         permission: {{ module_lower }}.view
-      - label: Module Info
+      - label: module_info
         route: {{ module_lower }}.info
         permission: {{ module_lower }}.view 
