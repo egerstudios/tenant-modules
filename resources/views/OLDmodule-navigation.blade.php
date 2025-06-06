@@ -1,9 +1,4 @@
 <div>
-    <!-- Debug output -->
-    <div class="p-2 bg-yellow-100 text-yellow-800 text-sm mb-4">
-        <div>Navigation Items: {{ count($navigation) }}</div>
-    </div>
-
     <flux:navlist>
         @forelse($navigation as $item)
             @if(app('navigation')->canViewNavigationItem($item))
