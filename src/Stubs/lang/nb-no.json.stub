@@ -1,6 +1,6 @@
 {
     "navigation": {
-        "title": "{{ module }} Styring",
+        "title": "{{ module }}",
         "welcome": "Velkommen",
         "module_info": "Modul Info"
     },
@@ -10,7 +10,7 @@
             "description": "Dette er velkomstsiden for {{ module }} modulen"
         },
         "info": {
-            "title": "Modul Informasjon",
+            "title": "Modulinformasjon",
             "description": "Informasjon om {{ module }} modulen"
         }
     },

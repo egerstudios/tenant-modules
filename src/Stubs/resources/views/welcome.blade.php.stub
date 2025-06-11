@@ -5,7 +5,10 @@
 <x-layouts.{{ layout }}>
     <div class="pb-3">
         <flux:breadcrumbs>
-            <flux:breadcrumbs.item href="{{ route('{{ module_lower }}.index') }}" icon="home">
+            <flux:breadcrumbs.item href="{{ route('dashboard') }}" icon="home">
+                Hjem
+            </flux:breadcrumbs.item>
+            <flux:breadcrumbs.item href="{{ route('{{ module }}.index') }}">
                 {{ module }}
             </flux:breadcrumbs.item>
         </flux:breadcrumbs>
