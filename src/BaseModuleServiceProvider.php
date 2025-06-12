@@ -78,14 +78,40 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             $locale = app()->getLocale();
             $fallbackLocale = config('app.fallback_locale');
             
+            \Log::debug("Loading PHP translations", [
+                'module' => $this->moduleName,
+                'locale' => $locale,
+                'fallback_locale' => $fallbackLocale
+            ]);
+            
             // Load current locale PHP files
             $currentLocalePath = "{$langPath}/{$locale}";
             if (is_dir($currentLocalePath)) {
+                \Log::debug("Loading current locale PHP files", [
+                    'path' => $currentLocalePath,
+                    'files' => glob("{$currentLocalePath}/*.php")
+                ]);
+                
                 foreach (glob("{$currentLocalePath}/*.php") as $file) {
                     $namespace = basename($file, '.php');
                     $translations = require $file;
+                    \Log::debug("Loaded PHP translations", [
+                        'file' => $file,
+                        'namespace' => $namespace,
+                        'has_translations' => is_array($translations),
+                        'translation_keys' => is_array($translations) ? array_keys($translations) : []
+                    ]);
+                    
                     if (is_array($translations)) {
-                        \Lang::addNamespace($this->moduleNameLower, $currentLocalePath);
+                        // Register the namespace for this specific file
+                        $this->app['translator']->addNamespace(
+                            "{$this->moduleNameLower}::{$namespace}",
+                            dirname($file)
+                        );
+                        \Log::debug("Added namespace for translations", [
+                            'namespace' => "{$this->moduleNameLower}::{$namespace}",
+                            'path' => dirname($file)
+                        ]);
                     }
                 }
             }
@@ -93,11 +119,31 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             // Load fallback locale PHP files
             $fallbackLocalePath = "{$langPath}/{$fallbackLocale}";
             if (is_dir($fallbackLocalePath)) {
+                \Log::debug("Loading fallback locale PHP files", [
+                    'path' => $fallbackLocalePath,
+                    'files' => glob("{$fallbackLocalePath}/*.php")
+                ]);
+                
                 foreach (glob("{$fallbackLocalePath}/*.php") as $file) {
                     $namespace = basename($file, '.php');
                     $translations = require $file;
+                    \Log::debug("Loaded fallback PHP translations", [
+                        'file' => $file,
+                        'namespace' => $namespace,
+                        'has_translations' => is_array($translations),
+                        'translation_keys' => is_array($translations) ? array_keys($translations) : []
+                    ]);
+                    
                     if (is_array($translations)) {
-                        \Lang::addNamespace($this->moduleNameLower, $fallbackLocalePath);
+                        // Register the namespace for this specific file
+                        $this->app['translator']->addNamespace(
+                            "{$this->moduleNameLower}::{$namespace}",
+                            dirname($file)
+                        );
+                        \Log::debug("Added namespace for fallback translations", [
+                            'namespace' => "{$this->moduleNameLower}::{$namespace}",
+                            'path' => dirname($file)
+                        ]);
                     }
                 }
             }
