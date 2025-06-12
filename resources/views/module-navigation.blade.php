@@ -2,7 +2,11 @@
     <flux:navlist>
         @forelse($navigation as $item)
             @if(app('navigation')->canViewNavigationItem($item))
-                @if(!empty($item['children']))
+                @php
+                    $showChildren = $item['show_children'] ?? true;
+                    $routePrefix = isset($item['route']) ? explode('.', $item['route'])[0] : null;
+                @endphp
+                @if(!empty($item['children']) && $showChildren)
                     <flux:navlist.group 
                         :heading="$item['label']" 
                         expandable 
@@ -26,7 +30,7 @@
                     <flux:navlist.item 
                         :href="Route::has($item['route'] ?? '') ? route($item['route']) : '#'" 
                         :icon="$item['icon'] ?? 'circle'"
-                        :current="request()->routeIs($item['route'] ?? '')" 
+                        :current="$routePrefix ? request()->routeIs($routePrefix . '.*') : request()->routeIs($item['route'] ?? '')" 
                         wire:navigate
                     >
                         {{ $item['label'] }}

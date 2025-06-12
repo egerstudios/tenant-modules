@@ -3,6 +3,7 @@ items:
     icon: module
     route: {{ module_lower }}.index
     permission: {{ module_lower }}.view
+    show_children: false
     children:
       - label: navigation.welcome
         route: {{ module_lower }}.index
