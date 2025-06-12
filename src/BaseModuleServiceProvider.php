@@ -43,31 +43,64 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             'files' => is_dir($langPath) ? scandir($langPath) : []
         ]);
         
+        /**
+         * Load module translations with proper namespacing
+         * 
+         * This implementation supports both JSON and PHP language files:
+         * 1. JSON files: Stored in lang/{locale}.json
+         * 2. PHP files: Stored in lang/{locale}/{file}.php
+         * 
+         * Example directory structure:
+         * modules/YourModule/
+         * ├── lang/
+         * │   ├── en/
+         * │   │   ├── general.php
+         * │   │   └── validation.php
+         * │   ├── nb-no/
+         * │   │   ├── general.php
+         * │   │   └── validation.php
+         * │   ├── en.json
+         * │   └── nb-no.json
+         * 
+         * Usage in code:
+         * - For PHP files: __('yourmodule::general.key')
+         * - For JSON files: __('yourmodule::key')
+         * 
+         * The namespace is automatically set to the lowercase module name
+         * (e.g., 'yourmodule' for a module named 'YourModule')
+         */
+        
         // Load translations with explicit namespace
         $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
         
-        // Load JSON translations explicitly
-        $locale = app()->getLocale();
-        $fallbackLocale = config('app.fallback_locale');
-        
-        // Load current locale translations
-        $currentLocalePath = "{$langPath}/{$locale}.json";
-        if (file_exists($currentLocalePath)) {
-            $currentTranslations = json_decode(file_get_contents($currentLocalePath), true);
-            \Log::debug("Loaded current locale translations", [
-                'locale' => $locale,
-                'translations' => $currentTranslations
-            ]);
-        }
-        
-        // Load fallback locale translations
-        $fallbackLocalePath = "{$langPath}/{$fallbackLocale}.json";
-        if (file_exists($fallbackLocalePath)) {
-            $fallbackTranslations = json_decode(file_get_contents($fallbackLocalePath), true);
-            \Log::debug("Loaded fallback locale translations", [
-                'locale' => $fallbackLocale,
-                'translations' => $fallbackTranslations
-            ]);
+        // Load PHP language files with proper namespace
+        if (is_dir($langPath)) {
+            $locale = app()->getLocale();
+            $fallbackLocale = config('app.fallback_locale');
+            
+            // Load current locale PHP files
+            $currentLocalePath = "{$langPath}/{$locale}";
+            if (is_dir($currentLocalePath)) {
+                foreach (glob("{$currentLocalePath}/*.php") as $file) {
+                    $namespace = basename($file, '.php');
+                    $translations = require $file;
+                    if (is_array($translations)) {
+                        \Lang::addNamespace($this->moduleNameLower, $currentLocalePath);
+                    }
+                }
+            }
+            
+            // Load fallback locale PHP files
+            $fallbackLocalePath = "{$langPath}/{$fallbackLocale}";
+            if (is_dir($fallbackLocalePath)) {
+                foreach (glob("{$fallbackLocalePath}/*.php") as $file) {
+                    $namespace = basename($file, '.php');
+                    $translations = require $file;
+                    if (is_array($translations)) {
+                        \Lang::addNamespace($this->moduleNameLower, $fallbackLocalePath);
+                    }
+                }
+            }
         }
         
         $this->registerNavigation();
