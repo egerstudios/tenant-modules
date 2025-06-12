@@ -311,7 +311,10 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
 
     protected function registerViews(): void
     {
-        View::addNamespace($this->moduleNameLower, module_path($this->moduleName, 'resources/views'));
+        $namespace = $this->moduleNameLower;
+        $path = module_path($this->moduleName, 'resources/views');
+        \Log::debug("Registering view namespace", ['namespace' => $namespace, 'path' => $path]);
+        View::addNamespace($namespace, $path);
     }
 
     protected function registerCommands(): void
