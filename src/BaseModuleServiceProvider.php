@@ -149,6 +149,20 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             }
         }
         
+        // Register Volt components
+        if (class_exists('Livewire\Volt\Volt')) {
+            $voltPath = module_path($this->moduleName, 'resources/views/livewire');
+            if (is_dir($voltPath)) {
+                \Livewire\Volt\Volt::mount([
+                    $voltPath => "Modules\\{$this->moduleName}\\Livewire",
+                ]);
+                \Log::debug("Registered Volt components", [
+                    'module' => $this->moduleName,
+                    'path' => $voltPath
+                ]);
+            }
+        }
+        
         $this->registerNavigation();
 
         // Register module views
