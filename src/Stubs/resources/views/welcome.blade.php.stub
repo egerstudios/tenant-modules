@@ -8,7 +8,7 @@
             <flux:breadcrumbs.item href="{{ route('dashboard') }}" icon="home">
                 Hjem
             </flux:breadcrumbs.item>
-            <flux:breadcrumbs.item href="{{ route('{{ module }}.index') }}">
+            <flux:breadcrumbs.item href="{{ route('{{ strtolower($module) }}.index') }}">
                 {{ module }}
             </flux:breadcrumbs.item>
         </flux:breadcrumbs>

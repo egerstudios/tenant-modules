@@ -1,7 +1,12 @@
 <x-layouts.{{ layout }}>
     <div class="pb-3">
         <flux:breadcrumbs>
-            <flux:breadcrumbs.item href="{{ route('dashboard') }}" icon="home"></flux:breadcrumbs.item>
+            <flux:breadcrumbs.item href="{{ route('dashboard') }}" icon="home">
+                Hjem
+            </flux:breadcrumbs.item>
+            <flux:breadcrumbs.item href="{{ route('{{ strtolower($module) }}.index') }}">
+                {{ module }}
+            </flux:breadcrumbs.item>
         </flux:breadcrumbs>
     </div>
 
