@@ -175,10 +175,7 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         if (class_exists(\Livewire\Livewire::class)) {
             $livewirePath = module_path($this->moduleName, 'Livewire');
             if (is_dir($livewirePath)) {
-                foreach (glob($livewirePath . '/*.php') as $file) {
-                    $class = 'Modules\\' . $this->moduleName . '\\Livewire\\' . basename($file, '.php');
-                    \Livewire\Livewire::component(strtolower($this->moduleName) . '-' . strtolower(basename($file, '.php')), $class);
-                }
+                $this->registerLivewireComponentsRecursively($livewirePath, 'Modules\\' . $this->moduleName . '\\Livewire');
             }
         }
 
@@ -328,6 +325,38 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             $this->commands([
                 // Register your module's commands here
             ]);
+        }
+    }
+
+    protected function registerLivewireComponentsRecursively($directory, $baseNamespace, $subPath = '')
+    {
+        $items = glob($directory . '/*');
+        foreach ($items as $item) {
+            if (is_dir($item)) {
+                $subDirName = basename($item);
+                $newSubPath = $subPath ? $subPath . '-' . strtolower($subDirName) : strtolower($subDirName);
+                $newNamespace = $baseNamespace . '\\' . $subDirName;
+                $this->registerLivewireComponentsRecursively($item, $newNamespace, $newSubPath);
+            } elseif (is_file($item) && pathinfo($item, PATHINFO_EXTENSION) === 'php') {
+                $className = basename($item, '.php');
+                $fullNamespace = $baseNamespace . '\\' . $className;
+                
+                // Build component name: module-subpath-classname (all lowercase)
+                $componentName = strtolower($this->moduleName);
+                if ($subPath) {
+                    $componentName .= '-' . $subPath;
+                }
+                $componentName .= '-' . strtolower($className);
+                
+                \Livewire\Livewire::component($componentName, $fullNamespace);
+                
+                \Log::debug("Registered Livewire component", [
+                    'module' => $this->moduleName,
+                    'component_name' => $componentName,
+                    'class' => $fullNamespace,
+                    'file' => $item
+                ]);
+            }
         }
     }
 } 
