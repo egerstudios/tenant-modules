@@ -341,18 +341,26 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
                 $className = basename($item, '.php');
                 $fullNamespace = $baseNamespace . '\\' . $className;
                 
-                // Build component name: module-subpath-classname (all lowercase)
-                $componentName = strtolower($this->moduleName);
+                // Register with kebab-case name (for <livewire:> tag syntax)
+                $kebabName = strtolower($this->moduleName);
                 if ($subPath) {
-                    $componentName .= '-' . $subPath;
+                    $kebabName .= '-' . $subPath;
                 }
-                $componentName .= '-' . strtolower($className);
+                $kebabName .= '-' . strtolower($className);
+                \Livewire\Livewire::component($kebabName, $fullNamespace);
                 
-                \Livewire\Livewire::component($componentName, $fullNamespace);
+                // Also register with namespaced name (for @livewire directive syntax)
+                $namespacedName = $this->moduleNameLower . '::';
+                if ($subPath) {
+                    $namespacedName .= str_replace('-', '.', $subPath) . '.';
+                }
+                $namespacedName .= strtolower($className);
+                \Livewire\Livewire::component($namespacedName, $fullNamespace);
                 
                 \Log::debug("Registered Livewire component", [
                     'module' => $this->moduleName,
-                    'component_name' => $componentName,
+                    'kebab_name' => $kebabName,
+                    'namespaced_name' => $namespacedName,
                     'class' => $fullNamespace,
                     'file' => $item
                 ]);
