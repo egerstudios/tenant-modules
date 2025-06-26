@@ -43,33 +43,6 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             'files' => is_dir($langPath) ? scandir($langPath) : []
         ]);
         
-        /**
-         * Load module translations with proper namespacing
-         * 
-         * This implementation supports both JSON and PHP language files:
-         * 1. JSON files: Stored in lang/{locale}.json
-         * 2. PHP files: Stored in lang/{locale}/{file}.php
-         * 
-         * Example directory structure:
-         * modules/YourModule/
-         * ├── lang/
-         * │   ├── en/
-         * │   │   ├── general.php
-         * │   │   └── validation.php
-         * │   ├── nb-no/
-         * │   │   ├── general.php
-         * │   │   └── validation.php
-         * │   ├── en.json
-         * │   └── nb-no.json
-         * 
-         * Usage in code:
-         * - For PHP files: __('yourmodule::general.key')
-         * - For JSON files: __('yourmodule::key')
-         * 
-         * The namespace is automatically set to the lowercase module name
-         * (e.g., 'yourmodule' for a module named 'YourModule')
-         */
-        
         // Load translations with explicit namespace
         $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
         
@@ -78,40 +51,17 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             $locale = app()->getLocale();
             $fallbackLocale = config('app.fallback_locale');
             
-            \Log::debug("Loading PHP translations", [
-                'module' => $this->moduleName,
-                'locale' => $locale,
-                'fallback_locale' => $fallbackLocale
-            ]);
-            
             // Load current locale PHP files
             $currentLocalePath = "{$langPath}/{$locale}";
             if (is_dir($currentLocalePath)) {
-                \Log::debug("Loading current locale PHP files", [
-                    'path' => $currentLocalePath,
-                    'files' => glob("{$currentLocalePath}/*.php")
-                ]);
-                
                 foreach (glob("{$currentLocalePath}/*.php") as $file) {
                     $namespace = basename($file, '.php');
                     $translations = require $file;
-                    \Log::debug("Loaded PHP translations", [
-                        'file' => $file,
-                        'namespace' => $namespace,
-                        'has_translations' => is_array($translations),
-                        'translation_keys' => is_array($translations) ? array_keys($translations) : []
-                    ]);
-                    
                     if (is_array($translations)) {
-                        // Register the namespace for this specific file
                         $this->app['translator']->addNamespace(
                             "{$this->moduleNameLower}::{$namespace}",
                             dirname($file)
                         );
-                        \Log::debug("Added namespace for translations", [
-                            'namespace' => "{$this->moduleNameLower}::{$namespace}",
-                            'path' => dirname($file)
-                        ]);
                     }
                 }
             }
@@ -119,36 +69,38 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
             // Load fallback locale PHP files
             $fallbackLocalePath = "{$langPath}/{$fallbackLocale}";
             if (is_dir($fallbackLocalePath)) {
-                \Log::debug("Loading fallback locale PHP files", [
-                    'path' => $fallbackLocalePath,
-                    'files' => glob("{$fallbackLocalePath}/*.php")
-                ]);
-                
                 foreach (glob("{$fallbackLocalePath}/*.php") as $file) {
                     $namespace = basename($file, '.php');
                     $translations = require $file;
-                    \Log::debug("Loaded fallback PHP translations", [
-                        'file' => $file,
-                        'namespace' => $namespace,
-                        'has_translations' => is_array($translations),
-                        'translation_keys' => is_array($translations) ? array_keys($translations) : []
-                    ]);
-                    
                     if (is_array($translations)) {
-                        // Register the namespace for this specific file
                         $this->app['translator']->addNamespace(
                             "{$this->moduleNameLower}::{$namespace}",
                             dirname($file)
                         );
-                        \Log::debug("Added namespace for fallback translations", [
-                            'namespace' => "{$this->moduleNameLower}::{$namespace}",
-                            'path' => dirname($file)
-                        ]);
                     }
                 }
             }
         }
         
+        // Register module views with namespace
+        $viewPath = module_path($this->moduleName, 'resources/views');
+        \Log::debug("Registering views for {$this->moduleName}", [
+            'path' => $viewPath,
+            'namespace' => $this->moduleNameLower
+        ]);
+        View::addNamespace($this->moduleNameLower, $viewPath);
+        
+        // Register Livewire components
+        if (class_exists(\Livewire\Livewire::class)) {
+            $livewirePath = module_path($this->moduleName, 'Livewire');
+            if (is_dir($livewirePath)) {
+                \Log::debug("Registering Livewire components for {$this->moduleName}", [
+                    'path' => $livewirePath
+                ]);
+                $this->registerLivewireComponentsRecursively($livewirePath, 'Modules\\' . $this->moduleName . '\\Livewire');
+            }
+        }
+
         // Register Volt components
         if (class_exists('Livewire\Volt\Volt')) {
             $voltPath = module_path($this->moduleName, 'resources/views/livewire');
@@ -156,33 +108,16 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
                 \Livewire\Volt\Volt::mount([
                     $voltPath => "Modules\\{$this->moduleName}\\Livewire",
                 ]);
-                \Log::debug("Registered Volt components", [
-                    'module' => $this->moduleName,
-                    'path' => $voltPath
-                ]);
             }
         }
         
-        $this->registerNavigation();
-
-        // Register module views
-        $this->registerViews();
-
-        // Register module commands
-        $this->registerCommands();
-
-        // Auto-register Livewire components in this module
-        if (class_exists(\Livewire\Livewire::class)) {
-            $livewirePath = module_path($this->moduleName, 'Livewire');
-            if (is_dir($livewirePath)) {
-                $this->registerLivewireComponentsRecursively($livewirePath, 'Modules\\' . $this->moduleName . '\\Livewire');
-            }
-        }
-
         // Auto-discover Volt components
         if (function_exists('Volt\\discover')) {
             \Volt\discover(base_path("modules/{$this->moduleName}/resources/components"), $this->moduleNameLower);
         }
+        
+        $this->registerNavigation();
+        $this->registerCommands();
     }
 
     protected function registerNavigation(): void
@@ -306,19 +241,6 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         return ['api'];
     }
 
-    protected function registerViews(): void
-    {
-        $namespace = $this->moduleNameLower;
-        $path = module_path($this->moduleName, 'resources/views');
-        \Log::debug("Registering view namespace", ['namespace' => $namespace, 'path' => $path]);
-        View::addNamespace($namespace, $path);
-        \Log::debug('module_path() resolved', [
-            'module' => $this->moduleName,
-            'resolved_path' => $path,
-            'exists' => is_dir($path)
-        ]);
-    }
-
     protected function registerCommands(): void
     {
         if ($this->app->runningInConsole()) {
@@ -334,36 +256,33 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         foreach ($items as $item) {
             if (is_dir($item)) {
                 $subDirName = basename($item);
-                $newSubPath = $subPath ? $subPath . '-' . strtolower($subDirName) : strtolower($subDirName);
+                $newSubPath = $subPath ? $subPath . '/' . strtolower($subDirName) : strtolower($subDirName);
                 $newNamespace = $baseNamespace . '\\' . $subDirName;
                 $this->registerLivewireComponentsRecursively($item, $newNamespace, $newSubPath);
             } elseif (is_file($item) && pathinfo($item, PATHINFO_EXTENSION) === 'php') {
                 $className = basename($item, '.php');
                 $fullNamespace = $baseNamespace . '\\' . $className;
                 
-                // Register with kebab-case name (for <livewire:> tag syntax)
-                $kebabName = strtolower($this->moduleName);
+                // Register with kebab-case name (for Livewire 3 compatibility)
+                $kebabName = str_replace(['_', ' '], '-', strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $className)));
                 if ($subPath) {
-                    $kebabName .= '-' . $subPath;
+                    $kebabName = str_replace('/', '.', strtolower($subPath)) . '.' . $kebabName;
                 }
-                $kebabName .= '-' . strtolower($className);
-                \Livewire\Livewire::component($kebabName, $fullNamespace);
                 
-                // Also register with namespaced name (for @livewire directive syntax)
-                $namespacedName = $this->moduleNameLower . '::';
-                if ($subPath) {
-                    $namespacedName .= str_replace('-', '.', $subPath) . '.';
-                }
-                $namespacedName .= strtolower($className);
-                \Livewire\Livewire::component($namespacedName, $fullNamespace);
+                // Register with namespaced name (for module namespace compatibility)
+                $namespacedName = $this->moduleNameLower . '::' . $kebabName;
                 
-                \Log::debug("Registered Livewire component", [
+                \Log::debug("Registering Livewire component", [
                     'module' => $this->moduleName,
                     'kebab_name' => $kebabName,
                     'namespaced_name' => $namespacedName,
                     'class' => $fullNamespace,
                     'file' => $item
                 ]);
+                
+                // Register both formats
+                \Livewire\Livewire::component($kebabName, $fullNamespace);
+                \Livewire\Livewire::component($namespacedName, $fullNamespace);
             }
         }
     }
