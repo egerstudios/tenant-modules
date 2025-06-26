@@ -256,7 +256,7 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
         foreach ($items as $item) {
             if (is_dir($item)) {
                 $subDirName = basename($item);
-                $newSubPath = $subPath ? $subPath . '/' . strtolower($subDirName) : strtolower($subDirName);
+                $newSubPath = $subPath ? $subPath . '/' . $subDirName : $subDirName;
                 $newNamespace = $baseNamespace . '\\' . $subDirName;
                 $this->registerLivewireComponentsRecursively($item, $newNamespace, $newSubPath);
             } elseif (is_file($item) && pathinfo($item, PATHINFO_EXTENSION) === 'php') {
@@ -266,7 +266,8 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
                 // Register with kebab-case name (for Livewire 3 compatibility)
                 $kebabName = str_replace(['_', ' '], '-', strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $className)));
                 if ($subPath) {
-                    $kebabName = str_replace('/', '.', strtolower($subPath)) . '.' . $kebabName;
+                    $kebabPath = str_replace(['_', ' '], '-', strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', str_replace('/', '.', $subPath))));
+                    $kebabName = $kebabPath . '.' . $kebabName;
                 }
                 
                 // Register with namespaced name (for module namespace compatibility)
